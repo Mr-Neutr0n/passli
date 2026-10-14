@@ -2,12 +2,13 @@
 TC08 — Interactive Sandbox Document Selector
 ============================================
 Test Steps:
-1. Navigate to the landing page and scroll to the cryptographic sandbox.
-2. Locate the document selector checkboxes (.sim-doc-checkbox).
-3. Toggle a document checkbox to modify the selection.
-4. Verify that the dynamic document counter (#sim-selected-count) instantly recalculates
+1. Navigate to the landing page and wait for full page readiness.
+2. Scroll to the cryptographic sandbox.
+3. Locate the document selector checkboxes (.sim-doc-checkbox).
+4. Toggle a document checkbox to modify the selection.
+5. Verify that the dynamic document counter (#sim-selected-count) instantly recalculates
    both the selected item count and the cumulative file size (e.g. "1 selected (2.4 MB)").
-5. Report PASS or FAIL.
+6. Report PASS or FAIL.
 """
 
 from selenium.webdriver.common.by import By
@@ -15,7 +16,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from .. import test_config
-from ..driver_factory import create_chrome_driver, capture_screenshot, pause
+from ..driver_factory import create_chrome_driver, capture_screenshot, pause, wait_for_page_ready
 
 
 def run_test(driver=None, record_callback=None):
@@ -29,14 +30,21 @@ def run_test(driver=None, record_callback=None):
     wait = WebDriverWait(driver, test_config.DEFAULT_WAIT_TIMEOUT)
 
     try:
+        if record_callback:
+            record_callback("Opening landing page...")
+
         driver.get(test_config.BASE_URL)
+        wait_for_page_ready(driver, step_reporter=record_callback, step_msg="Stabilizing landing page & sandbox simulator...")
         pause()
 
-        # Step 1: Scroll to sandbox
+        if record_callback:
+            record_callback("Scrolling to interactive document sandbox...")
+
+        # Step 1: Scroll to sandbox and ensure visibility
         sandbox = wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, test_config.SELECTORS["interactive_sandbox"]))
+            EC.visibility_of_element_located((By.CSS_SELECTOR, test_config.SELECTORS["interactive_sandbox"]))
         )
-        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", sandbox)
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest', behavior: 'smooth'});", sandbox)
         pause()
 
         # Step 2: Locate checkboxes
@@ -46,10 +54,16 @@ def run_test(driver=None, record_callback=None):
         count_badge = driver.find_element(By.CSS_SELECTOR, test_config.SELECTORS["sim_selected_count"])
         initial_text = count_badge.text.strip()
 
+        if record_callback:
+            record_callback(f"Toggling document selection checkbox (current: '{initial_text}')...")
+
         # Step 3: Toggle the second checkbox (uncheck)
         second_cb = checkboxes[1]
         driver.execute_script("arguments[0].click();", second_cb)
         pause()
+
+        if record_callback:
+            record_callback("Verifying real-time file size & count recalculation...")
 
         # Step 4: Verify dynamic calculation
         updated_text = count_badge.text.strip()

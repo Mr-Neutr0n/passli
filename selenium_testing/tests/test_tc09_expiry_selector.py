@@ -2,7 +2,7 @@
 TC09 — Expiration Timer Selection
 =================================
 Test Steps:
-1. Navigate to the landing page sandbox.
+1. Navigate to the landing page sandbox and wait for readiness.
 2. Locate the expiration timer selector buttons (.expiry-btn).
 3. Click a different expiration tier (e.g. '15 mins' or '2 hours').
 4. Verify that the countdown telemetry card (#sim-expiry-text) reflects the selected duration.
@@ -14,7 +14,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from .. import test_config
-from ..driver_factory import create_chrome_driver, capture_screenshot, pause
+from ..driver_factory import create_chrome_driver, capture_screenshot, pause, wait_for_page_ready
 
 
 def run_test(driver=None, record_callback=None):
@@ -28,14 +28,21 @@ def run_test(driver=None, record_callback=None):
     wait = WebDriverWait(driver, test_config.DEFAULT_WAIT_TIMEOUT)
 
     try:
+        if record_callback:
+            record_callback("Opening landing page...")
+
         driver.get(test_config.BASE_URL)
+        wait_for_page_ready(driver, step_reporter=record_callback, step_msg="Stabilizing landing page...")
         pause()
 
-        # Step 1: Scroll to sandbox
+        if record_callback:
+            record_callback("Scrolling to expiration timer selector...")
+
+        # Step 1: Scroll to sandbox and ensure visibility
         sandbox = wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, test_config.SELECTORS["interactive_sandbox"]))
+            EC.visibility_of_element_located((By.CSS_SELECTOR, test_config.SELECTORS["interactive_sandbox"]))
         )
-        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", sandbox)
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest', behavior: 'smooth'});", sandbox)
         pause()
 
         # Step 2: Locate expiry buttons
@@ -52,8 +59,15 @@ def run_test(driver=None, record_callback=None):
                 break
         
         assert target_btn is not None, "Target '15 mins' button not found"
+
+        if record_callback:
+            record_callback("Clicking '15 mins' expiration duration pill...")
+
         driver.execute_script("arguments[0].click();", target_btn)
         pause()
+
+        if record_callback:
+            record_callback("Verifying countdown telemetry card label synchronization...")
 
         # Step 4: Verify expiry label reflects '15 mins'
         current_expiry = expiry_label.text.strip()

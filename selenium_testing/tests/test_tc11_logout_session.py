@@ -14,7 +14,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from .. import test_config
-from ..driver_factory import create_chrome_driver, capture_screenshot, pause
+from ..driver_factory import create_chrome_driver, capture_screenshot, pause, wait_for_page_ready
 
 
 def run_test(driver=None, record_callback=None):
@@ -30,37 +30,52 @@ def run_test(driver=None, record_callback=None):
     try:
         # Step 1: Ensure an active authenticated session
         if "/dashboard" not in driver.current_url:
+            if record_callback:
+                record_callback("Navigating to login to prepare session...")
+
             driver.get(f"{test_config.BASE_URL}/login/")
+            wait_for_page_ready(driver, step_reporter=record_callback, step_msg="Stabilizing login page...")
             pause()
 
             username_input = wait.until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, test_config.SELECTORS["login_username"]))
+                EC.visibility_of_element_located((By.CSS_SELECTOR, test_config.SELECTORS["login_username"]))
             )
-            password_input = driver.find_element(By.CSS_SELECTOR, test_config.SELECTORS["login_password"])
-            submit_btn = driver.find_element(By.CSS_SELECTOR, test_config.SELECTORS["login_submit"])
+            password_input = wait.until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, test_config.SELECTORS["login_password"]))
+            )
+            submit_btn = wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, test_config.SELECTORS["login_submit"]))
+            )
 
             username_input.clear()
             username_input.send_keys(test_config.TEST_USERNAME)
             password_input.clear()
             password_input.send_keys(test_config.TEST_PASSWORD)
             submit_btn.click()
-            pause()
             wait.until(EC.url_contains("/dashboard"))
+            wait_for_page_ready(driver, step_reporter=record_callback)
+
+        if record_callback:
+            record_callback("Submitting secure CSRF-protected logout request...")
 
         # Step 2: Locate and submit the CSRF-protected logout form
         logout_form = wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "form[action*='/logout/']"))
         )
         driver.execute_script("arguments[0].submit();", logout_form)
-        pause()
 
         # Step 3: Verify redirect to public page
         wait.until(lambda d: "/dashboard" not in d.current_url)
+        wait_for_page_ready(driver, step_reporter=record_callback, step_msg="Stabilizing public landing page after session teardown...")
+
+        if record_callback:
+            record_callback("Verifying restoration of public 'Sign In' controls...")
 
         # Step 4: Verify public navigation link (Sign In) is visible
         wait.until(
             lambda d: len(d.find_elements(By.CSS_SELECTOR, "a[href*='/login/']")) > 0
         )
+        pause()
 
         screenshot_path = capture_screenshot(driver, "TC11", "PASS")
         return {

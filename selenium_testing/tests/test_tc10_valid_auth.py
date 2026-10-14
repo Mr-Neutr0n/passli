@@ -2,7 +2,7 @@
 TC10 — Authentication & Session Authorization (Valid Login)
 ===========================================================
 Test Steps:
-1. Navigate to the login portal (/login/).
+1. Navigate to the login portal (/login/) and wait for full readiness.
 2. Enter valid account credentials (qa_test_user).
 3. Submit the authentication form.
 4. Verify successful authentication redirect to /dashboard/.
@@ -15,7 +15,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from .. import test_config
-from ..driver_factory import create_chrome_driver, capture_screenshot, pause
+from ..driver_factory import create_chrome_driver, capture_screenshot, pause, wait_for_page_ready
 
 
 def run_test(driver=None, record_callback=None):
@@ -29,15 +29,26 @@ def run_test(driver=None, record_callback=None):
     wait = WebDriverWait(driver, test_config.DEFAULT_WAIT_TIMEOUT)
 
     try:
+        if record_callback:
+            record_callback("Opening login portal...")
+
         driver.get(f"{test_config.BASE_URL}/login/")
+        wait_for_page_ready(driver, step_reporter=record_callback, step_msg="Stabilizing login page & inputs...")
         pause()
+
+        if record_callback:
+            record_callback(f"Entering credentials for '{test_config.TEST_USERNAME}'...")
 
         # Step 1 & 2: Fill valid credentials
         username_input = wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, test_config.SELECTORS["login_username"]))
+            EC.visibility_of_element_located((By.CSS_SELECTOR, test_config.SELECTORS["login_username"]))
         )
-        password_input = driver.find_element(By.CSS_SELECTOR, test_config.SELECTORS["login_password"])
-        submit_btn = driver.find_element(By.CSS_SELECTOR, test_config.SELECTORS["login_submit"])
+        password_input = wait.until(
+            EC.visibility_of_element_located((By.CSS_SELECTOR, test_config.SELECTORS["login_password"]))
+        )
+        submit_btn = wait.until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, test_config.SELECTORS["login_submit"]))
+        )
 
         username_input.clear()
         username_input.send_keys(test_config.TEST_USERNAME)
@@ -45,15 +56,21 @@ def run_test(driver=None, record_callback=None):
         password_input.send_keys(test_config.TEST_PASSWORD)
         pause()
 
+        if record_callback:
+            record_callback("Submitting credentials and waiting for dashboard authorization...")
+
         # Step 3: Submit login form
         submit_btn.click()
-        pause()
 
-        # Step 4: Verify redirect to authenticated dashboard
+        # Step 4: Verify redirect to authenticated dashboard and settle
         wait.until(EC.url_contains("/dashboard"))
+        wait_for_page_ready(driver, step_reporter=record_callback, step_msg="Stabilizing authenticated vault dashboard...")
         assert "/dashboard" in driver.current_url, (
             f"Expected redirect to dashboard, current URL is: {driver.current_url}"
         )
+
+        if record_callback:
+            record_callback("Verifying private dashboard header and security status bar...")
 
         # Step 5: Verify authenticated dashboard interface elements
         dashboard_header = wait.until(
@@ -62,6 +79,7 @@ def run_test(driver=None, record_callback=None):
         assert "Dashboard" in dashboard_header.text or "Personal Vault" in dashboard_header.text, (
             f"Expected dashboard heading, but found: '{dashboard_header.text}'"
         )
+        pause()
 
         screenshot_path = capture_screenshot(driver, "TC10", "PASS")
         return {

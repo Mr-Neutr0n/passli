@@ -15,7 +15,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
 from .. import test_config
-from ..driver_factory import create_chrome_driver, capture_screenshot, pause
+from ..driver_factory import create_chrome_driver, capture_screenshot, pause, wait_for_page_ready
 
 
 def run_demo_fail_01(driver=None, record_callback=None):
@@ -28,11 +28,18 @@ def run_demo_fail_01(driver=None, record_callback=None):
         driver = create_chrome_driver()
 
     try:
+        if record_callback:
+            record_callback("Loading application page...")
+
         driver.get(test_config.BASE_URL)
+        wait_for_page_ready(driver, step_reporter=record_callback, step_msg="Stabilizing page...")
         pause()
 
         actual_title = driver.title.strip()
         deliberate_wrong_title = "University Grading Portal 2026 — Secure Student Gateway"
+
+        if record_callback:
+            record_callback("Asserting title against deliberately incorrect expected value...")
 
         # Deliberate assertion failure
         assert actual_title == deliberate_wrong_title, (
@@ -43,7 +50,7 @@ def run_demo_fail_01(driver=None, record_callback=None):
         return {
             "test_id": "DEMO_FAIL_01",
             "name": "[DEMO FAIL] Deliberate Title Mismatch",
-            "status": "PASS",  # Would only happen if title magically matched
+            "status": "PASS",
             "duration": 0.0,
             "message": "Unexpected pass: title matched artificial string",
             "expected": deliberate_wrong_title,
@@ -79,11 +86,18 @@ def run_demo_fail_02(driver=None, record_callback=None):
         driver = create_chrome_driver()
 
     try:
+        if record_callback:
+            record_callback("Loading landing page...")
+
         driver.get(test_config.BASE_URL)
+        wait_for_page_ready(driver, step_reporter=record_callback, step_msg="Stabilizing page layout...")
         pause()
 
         ghost_selector = "#deliberately-missing-ghost-element-xyz-999"
         
+        if record_callback:
+            record_callback(f"Executing 3.0s explicit wait for non-existent '{ghost_selector}'...")
+
         # Use short timeout (3.0s) so video demo runs swiftly
         short_wait = WebDriverWait(driver, test_config.SHORT_WAIT_TIMEOUT)
         
@@ -130,7 +144,11 @@ def run_demo_fail_03(driver=None, record_callback=None):
         driver = create_chrome_driver()
 
     try:
+        if record_callback:
+            record_callback("Loading landing page...")
+
         driver.get(test_config.BASE_URL)
+        wait_for_page_ready(driver, step_reporter=record_callback, step_msg="Stabilizing page elements...")
         pause()
 
         wait = WebDriverWait(driver, test_config.DEFAULT_WAIT_TIMEOUT)
@@ -140,6 +158,9 @@ def run_demo_fail_03(driver=None, record_callback=None):
 
         actual_text = hero_title.text.strip()
         deliberate_incorrect_text = "Welcome to the Legacy Plaintext Banking Portal"
+
+        if record_callback:
+            record_callback("Asserting hero text against deliberate legacy banking copy...")
 
         # Deliberate assertion failure
         assert deliberate_incorrect_text in actual_text, (

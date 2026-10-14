@@ -59,6 +59,12 @@ def main():
         help="Step pause duration in seconds between browser actions for live explanation (default: 1.5s)",
     )
     parser.add_argument(
+        "--settle",
+        type=float,
+        default=None,
+        help="Pre-load settlement pause in seconds for slow internet / heavy assets (default: 2.5s)",
+    )
+    parser.add_argument(
         "--headless",
         action="store_true",
         help="Run browser in headless mode",
@@ -77,6 +83,9 @@ def main():
 
     if args.delay is not None:
         test_config.set_step_delay(args.delay)
+
+    if args.settle is not None:
+        test_config.set_page_settle_delay(args.settle)
 
     if args.headless:
         test_config.HEADLESS = True

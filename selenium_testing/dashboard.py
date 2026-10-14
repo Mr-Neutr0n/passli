@@ -3,7 +3,11 @@ Passli Live PASS/FAIL Desktop Automation Dashboard
 ==================================================
 Compact, professional dark-themed Tkinter GUI for real-time monitoring
 of Selenium WebDriver test execution. Built for live university presentations.
-Includes dynamic presentation pacing controls and individual test execution.
+Features:
+- Slow network pre-load settlement safeguard
+- Real-time live sub-step action telemetry
+- Narration speed controls (1.5s - 4.0s)
+- Comprehensive individual test execution
 """
 
 import os
@@ -25,8 +29,8 @@ class PassliLiveDashboard:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title("Passli — Selenium Test Automation Dashboard")
-        self.root.geometry("860x700")
-        self.root.minsize(720, 560)
+        self.root.geometry("880x730")
+        self.root.minsize(740, 580)
 
         # Stay on top by default so recording captures both browser & dashboard
         self.always_on_top = True
@@ -111,7 +115,7 @@ class PassliLiveDashboard:
         )
 
     def _build_ui(self):
-        """Build UI layout containing header, metrics cards, treeview, controls, and speed bar."""
+        """Build UI layout containing header, metrics cards, pacing controls, treeview, and buttons."""
         main_container = tk.Frame(self.root, bg=self.c_bg_main, padx=14, pady=12)
         main_container.pack(fill=tk.BOTH, expand=True)
 
@@ -182,46 +186,91 @@ class PassliLiveDashboard:
         self.skipped_card = self._create_card(metrics_frame, "SKIPPED", "0", self.c_yellow)
         self.duration_card = self._create_card(metrics_frame, "DURATION", "0.0s", "#cbd5e1")
 
-        # ----------------- Speed & Pacing Bar (Presentation Slowdown) -----------------
-        pacing_frame = tk.Frame(main_container, bg=self.c_bg_card, bd=1, relief="solid", padx=10, pady=6)
+        # ----------------- Speed Pacing & Slow Network Bar -----------------
+        pacing_frame = tk.Frame(main_container, bg=self.c_bg_card, bd=1, relief="solid", padx=10, pady=7)
         pacing_frame.pack(fill=tk.X, pady=(0, 8))
 
+        # Action Speed
+        speed_box = tk.Frame(pacing_frame, bg=self.c_bg_card)
+        speed_box.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
         speed_lbl = tk.Label(
-            pacing_frame,
-            text="⏱ Execution Pacing / Narration Speed:",
+            speed_box,
+            text="⏱ Action Pacing:",
             font=("Segoe UI", 8, "bold"),
             fg="#38bdf8",
             bg=self.c_bg_card,
         )
-        speed_lbl.pack(side=tk.LEFT, padx=(0, 8))
+        speed_lbl.pack(side=tk.LEFT, padx=(0, 4))
 
         self.speed_options = {
-            "Presentation Mode (1.5s delay) — Recommended": 1.5,
-            "Slow Narration (2.5s delay) — Extra Time to Explain": 2.5,
-            "Ultra Slow (4.0s delay) — Deep Dive": 4.0,
-            "Moderate (1.0s delay)": 1.0,
-            "Fast (0.3s delay)": 0.3,
+            "Slow Process Mode (2.5s)": 2.5,
+            "Presentation Mode (1.5s)": 1.5,
+            "Very Slow Narration (3.5s)": 3.5,
+            "Ultra Slow (5.0s)": 5.0,
+            "Moderate (1.0s)": 1.0,
+            "Fast (0.3s)": 0.3,
         }
 
         self.speed_combo = ttk.Combobox(
-            pacing_frame,
+            speed_box,
             values=list(self.speed_options.keys()),
             state="readonly",
-            width=46,
+            width=23,
             font=("Segoe UI", 8),
         )
         self.speed_combo.current(0)
         self.speed_combo.bind("<<ComboboxSelected>>", self._on_speed_changed)
-        self.speed_combo.pack(side=tk.LEFT)
+        self.speed_combo.pack(side=tk.LEFT, padx=(0, 10))
 
-        speed_hint = tk.Label(
-            pacing_frame,
-            text="(Pauses at every step so you can speak and show actions)",
-            font=("Segoe UI", 7, "italic"),
-            fg=self.c_text_muted,
+        # Slow Network / Page Settle Pre-Load Guard
+        settle_box = tk.Frame(pacing_frame, bg=self.c_bg_card)
+        settle_box.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        settle_lbl = tk.Label(
+            settle_box,
+            text="🌐 Slow Internet Pre-Load:",
+            font=("Segoe UI", 8, "bold"),
+            fg="#10b981",
             bg=self.c_bg_card,
         )
-        speed_hint.pack(side=tk.LEFT, padx=(8, 0))
+        settle_lbl.pack(side=tk.LEFT, padx=(0, 4))
+
+        self.settle_options = {
+            "3.5s (Slow Internet & Font Settle)": 3.5,
+            "2.5s (Safe Pre-Load Settlement)": 2.5,
+            "5.0s (Ultra Slow High Latency)": 5.0,
+            "1.5s (Fast Localhost)": 1.5,
+        }
+
+        self.settle_combo = ttk.Combobox(
+            settle_box,
+            values=list(self.settle_options.keys()),
+            state="readonly",
+            width=26,
+            font=("Segoe UI", 8),
+        )
+        self.settle_combo.current(0)
+        self.settle_combo.bind("<<ComboboxSelected>>", self._on_settle_changed)
+        self.settle_combo.pack(side=tk.LEFT, padx=(0, 8))
+
+        # Quick Slow Mode Preset Button
+        self.btn_slow_preset = tk.Button(
+            pacing_frame,
+            text="🐢 Slow Process Mode",
+            font=("Segoe UI", 8, "bold"),
+            bg="#065f46",
+            fg="#6ee7b7",
+            activebackground="#047857",
+            activeforeground="#ffffff",
+            bd=1,
+            relief="solid",
+            padx=8,
+            pady=2,
+            cursor="hand2",
+            command=self._apply_slow_process_mode,
+        )
+        self.btn_slow_preset.pack(side=tk.RIGHT)
 
         # ----------------- Progress Bar -----------------
         self.prog_var = tk.DoubleVar(value=0.0)
@@ -231,7 +280,18 @@ class PassliLiveDashboard:
             maximum=100.0,
             style="Custom.Horizontal.TProgressbar",
         )
-        self.progress_bar.pack(fill=tk.X, pady=(0, 8))
+        self.progress_bar.pack(fill=tk.X, pady=(0, 4))
+
+        # ----------------- Live Sub-Step Action Banner -----------------
+        self.active_step_label = tk.Label(
+            main_container,
+            text="⚡ Live Step: Ready to execute tests (all web elements load stably before interaction)",
+            font=("Segoe UI", 8, "italic"),
+            fg="#67e8f9",
+            bg=self.c_bg_main,
+            anchor="w",
+        )
+        self.active_step_label.pack(fill=tk.X, pady=(0, 6))
 
         # ----------------- Live Test Matrix Treeview -----------------
         tree_frame = tk.Frame(main_container, bg=self.c_bg_card, bd=1, relief="solid")
@@ -334,6 +394,22 @@ class PassliLiveDashboard:
             command=self._run_selected_tree_item,
         )
         self.btn_run_selected.pack(side=tk.LEFT)
+
+        # Slow Mode Patient Pre-Load Checkbox
+        self.slow_mode_var = tk.BooleanVar(value=True)
+        self.slow_check = tk.Checkbutton(
+            single_run_frame,
+            text="🐢 Patient Full Pre-Load",
+            variable=self.slow_mode_var,
+            font=("Segoe UI", 8, "bold"),
+            fg="#6ee7b7",
+            bg=self.c_bg_main,
+            selectcolor=self.c_bg_header,
+            activebackground=self.c_bg_main,
+            activeforeground="#a7f3d0",
+            command=self._on_slow_mode_toggled,
+        )
+        self.slow_check.pack(side=tk.RIGHT, padx=(8, 0))
 
         # ----------------- Action Buttons Toolbar -----------------
         btn_frame = tk.Frame(main_container, bg=self.c_bg_main)
@@ -471,11 +547,42 @@ class PassliLiveDashboard:
         val.pack(anchor="w")
         return val
 
+    def _apply_slow_process_mode(self):
+        """One-click activation of patient slow process mode for presentations & slow internet."""
+        self.speed_combo.set("Slow Process Mode (2.5s)")
+        self.settle_combo.set("3.5s (Slow Internet & Font Settle)")
+        self.slow_mode_var.set(True)
+        test_config.set_step_delay(2.5)
+        test_config.set_page_settle_delay(3.5)
+        self.active_step_label.config(
+            text="⚡ Mode: 🐢 Slow Process Mode ACTIVE (Pre-loads 3.5s for fonts & assets; 2.5s step pacing)"
+        )
+        self.status_badge.config(text="🐢 SLOW MODE", bg="#065f46", fg="#6ee7b7")
+
+    def _on_slow_mode_toggled(self):
+        """Ensure settle delay is sufficient when slow mode is checked."""
+        if self.slow_mode_var.get():
+            if test_config.PAGE_SETTLE_DELAY < 2.5:
+                self.settle_combo.set("3.5s (Slow Internet & Font Settle)")
+                test_config.set_page_settle_delay(3.5)
+            if test_config.STEP_DELAY < 1.5:
+                self.speed_combo.set("Slow Process Mode (2.5s)")
+                test_config.set_step_delay(2.5)
+            self.active_step_label.config(text="⚡ Slow Process Pre-Load: ENABLED (Websites fully render before steps)")
+        else:
+            self.active_step_label.config(text="⚡ Slow Process Pre-Load: Standard (Uses current dropdown settings)")
+
     def _on_speed_changed(self, event=None):
         """Update step delay dynamically from dropdown."""
         selected_label = self.speed_combo.get()
         delay = self.speed_options.get(selected_label, 1.5)
         test_config.set_step_delay(delay)
+
+    def _on_settle_changed(self, event=None):
+        """Update slow internet settlement delay dynamically."""
+        selected_label = self.settle_combo.get()
+        delay = self.settle_options.get(selected_label, 2.5)
+        test_config.set_page_settle_delay(delay)
 
     def _toggle_pin(self):
         """Toggle always-on-top window property."""
@@ -516,6 +623,7 @@ class PassliLiveDashboard:
         self.skipped_card.config(text="0")
         self.duration_card.config(text="0.0s")
         self.prog_var.set(0.0)
+        self.active_step_label.config(text="⚡ Status: Ready to run tests")
 
     def _on_tree_select(self, event=None):
         """Handle user clicking a table row to enable single test run."""
@@ -549,6 +657,12 @@ class PassliLiveDashboard:
             return
 
         self._on_speed_changed()
+        self._on_settle_changed()
+
+        # If patient pre-load mode is checked, enforce minimum 2.5s safe pre-load
+        if self.slow_mode_var.get() and test_config.PAGE_SETTLE_DELAY < 2.5:
+            test_config.set_page_settle_delay(3.0)
+
         self.is_running = True
         self.current_suite = suite_type
         self._populate_initial_tree(suite_type, single_test_id=single_test_id)
@@ -573,6 +687,7 @@ class PassliLiveDashboard:
                 "single_test_id": single_test_id,
                 "headless": test_config.HEADLESS,
                 "step_delay": test_config.STEP_DELAY,
+                "page_settle_delay": test_config.PAGE_SETTLE_DELAY,
             },
             daemon=True,
         )
@@ -647,6 +762,18 @@ class PassliLiveDashboard:
                         cur[4] = "..."
                         self.tree.item(item_id, values=cur, tags=("RUNNING",))
                         self.tree.see(item_id)
+                    self.active_step_label.config(text=f"⚡ [{t_id}] Starting execution...")
+
+                elif ev_type == "TEST_STEP":
+                    t_id = data.get("test_id", "")
+                    step_msg = data.get("step", "")
+                    self.active_step_label.config(text=f"⚡ [{t_id}] {step_msg}")
+                    if t_id in self.test_items:
+                        item_id = self.test_items[t_id]
+                        cur = list(self.tree.item(item_id, "values"))
+                        cur[5] = f"⏳ {step_msg}"
+                        self.tree.item(item_id, values=cur)
+                        self.tree.see(item_id)
 
                 elif ev_type == "TEST_COMPLETED":
                     res = data["test"]
@@ -671,6 +798,7 @@ class PassliLiveDashboard:
 
                     pct = (data["completed_count"] / max(data["total"], 1)) * 100.0
                     self.prog_var.set(pct)
+                    self.active_step_label.config(text=f"✔ [{t_id}] Completed ({status})")
 
                 elif ev_type == "TEST_SKIPPED":
                     res = data
@@ -705,6 +833,8 @@ class PassliLiveDashboard:
                         self.status_badge.config(text="DEMO COMPLETED", bg="#854d0e", fg="#fef08a")
                     else:
                         self.status_badge.config(text=f"COMPLETED ({failed} FAIL)", bg="#991b1b", fg="#fecaca")
+                    
+                    self.active_step_label.config(text=f"🏁 Suite execution finished in {dur}s")
 
                 elif ev_type == "SUITE_ERROR":
                     self.is_running = False

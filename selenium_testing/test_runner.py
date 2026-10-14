@@ -179,12 +179,14 @@ class TestSuiteRunner:
         single_test_id: str = None,
         headless: bool = None,
         step_delay: float = None,
+        page_settle_delay: float = None,
     ):
         """
         Run selected test suite or individual test.
         suite_type can be 'normal', 'demo', 'all', or 'single'.
         single_test_id: ID of specific test when suite_type is 'single' (e.g. 'TC05').
         step_delay: Presentation pause between actions in seconds.
+        page_settle_delay: Settlement wait for website to finish loading before interactions.
         """
         if self.is_running:
             logger.warning("Run requested while another suite is already running.")
@@ -192,6 +194,9 @@ class TestSuiteRunner:
 
         if step_delay is not None:
             test_config.set_step_delay(step_delay)
+
+        if page_settle_delay is not None:
+            test_config.set_page_settle_delay(page_settle_delay)
 
         self.is_running = True
         self.stop_requested.clear()
@@ -273,8 +278,9 @@ class TestSuiteRunner:
                 })
 
                 t_start = time.time()
+                step_callback = lambda msg: self.post_update("TEST_STEP", {"test_id": test_id, "step": msg})
                 try:
-                    result = test_meta["runner"](driver=driver)
+                    result = test_meta["runner"](driver=driver, record_callback=step_callback)
                 except Exception as ex:
                     logger.exception(f"Unhandled exception in {test_id}: {ex}")
                     result = {

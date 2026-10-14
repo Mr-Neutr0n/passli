@@ -2,7 +2,7 @@
 Driver Factory Module for Passli Selenium Automated Testing Suite
 ================================================================
 Manages WebDriver instantiation, browser options, and clean teardown.
-Automatically detects matching local ChromeDriver or uses Selenium 4 manager.
+Includes robust page readiness and layout stabilization for slow internet.
 """
 
 import os
@@ -12,7 +12,8 @@ from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import WebDriverException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import WebDriverException, TimeoutException
 
 from . import test_config
 
@@ -70,9 +71,197 @@ def create_chrome_driver(headless: bool = None) -> webdriver.Chrome:
         )
 
     # Set script timeout and page load timeout
-    driver.set_page_load_timeout(30)
-    driver.set_script_timeout(30)
+    driver.set_page_load_timeout(45)
+    driver.set_script_timeout(45)
     return driver
+
+
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+
+
+def wait_for_page_ready(
+    driver: webdriver.Chrome,
+    min_stabilize: float = None,
+    step_reporter=None,
+    step_msg: str = "Waiting for page layout, fonts, and assets to settle...",
+):
+    """
+    Safely wait for the page to finish loading and allow slow network assets to settle:
+    1. Checks document.readyState === 'complete' (waits for all HTML, styles, and scripts)
+    2. Checks document.fonts to ensure web fonts and typography have rendered
+    3. Verifies document.images have completed loading
+    4. Performs an explicit stabilization pause so layouts and styles are fully painted
+    """
+    if step_reporter:
+        step_reporter(step_msg)
+
+    # Step 1: Wait for document.readyState == 'complete'
+    try:
+        WebDriverWait(driver, test_config.DEFAULT_WAIT_TIMEOUT).until(
+            lambda d: d.execute_script("return document.readyState === 'complete'")
+        )
+    except TimeoutException:
+        # Graceful fallback: check if at least interactive
+        try:
+            WebDriverWait(driver, 3.0).until(
+                lambda d: d.execute_script("return document.readyState in ('complete', 'interactive')")
+            )
+        except Exception:
+            pass
+
+    # Step 2: Wait for web fonts (e.g. Google Fonts / Material Symbols)
+    try:
+        WebDriverWait(driver, 4.0).until(
+            lambda d: d.execute_script("return !document.fonts || document.fonts.status === 'loaded'")
+        )
+    except Exception:
+        pass
+
+    # Step 3: Wait for images to complete loading
+    try:
+        WebDriverWait(driver, 4.0).until(
+            lambda d: d.execute_script(
+                "return Array.from(document.images || []).every(function(img) { return img.complete; })"
+            )
+        )
+    except Exception:
+        pass
+
+    # Step 4: Settlement pause for slow internet connections
+    settle_delay = min_stabilize if min_stabilize is not None else test_config.PAGE_SETTLE_DELAY
+    if settle_delay and settle_delay > 0:
+        if step_reporter:
+            step_reporter(f"Page loaded. Settling layout & visual elements ({settle_delay:.1f}s)...")
+        time.sleep(settle_delay)
+
+
+def highlight_element(driver: webdriver.Chrome, element, color: str = "#38bdf8", duration: float = 0.6):
+    """
+    Draw a clean, professional cyan focus border around the element being interacted with.
+    Makes it instantly clear in university presentation recordings which element is being tested.
+    """
+    try:
+        driver.execute_script(
+            f"""
+            var el = arguments[0];
+            var origOutline = el.style.outline;
+            var origShadow = el.style.boxShadow;
+            el.style.outline = '2px solid {color}';
+            el.style.outlineOffset = '2px';
+            el.style.boxShadow = '0 0 12px rgba(56, 189, 248, 0.6)';
+            setTimeout(function() {{
+                try {{
+                    el.style.outline = origOutline;
+                    el.style.boxShadow = origShadow;
+                }} catch(e) {{}}
+            }}, {int(duration * 1000)});
+            """,
+            element,
+        )
+    except Exception:
+        pass
+
+
+def wait_and_scroll_to_element(
+    driver: webdriver.Chrome,
+    locator: tuple,
+    timeout: float = None,
+    step_reporter=None,
+    step_msg: str = None,
+):
+    """
+    Waits for an element to be strictly visible on screen, scrolls it smoothly
+    to viewport center, highlights it, and lets layout settle.
+    """
+    if step_reporter and step_msg:
+        step_reporter(step_msg)
+
+    t = timeout or test_config.DEFAULT_WAIT_TIMEOUT
+    element = WebDriverWait(driver, t).until(
+        EC.visibility_of_element_located(locator)
+    )
+
+    try:
+        driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center', inline: 'nearest', behavior: 'smooth'});",
+            element,
+        )
+    except Exception:
+        pass
+
+    highlight_element(driver, element)
+    
+    # Brief settlement pause after scrolling so evaluator sees it clearly
+    if test_config.STEP_DELAY >= 1.0:
+        time.sleep(0.4)
+    return element
+
+
+def safe_click(
+    driver: webdriver.Chrome,
+    element_or_locator,
+    timeout: float = None,
+    step_reporter=None,
+    step_msg: str = None,
+):
+    """
+    Safely scrolls to and clicks an element with automatic JavaScript fallback
+    if overlay, floating navbars, or animations interfere.
+    """
+    if step_reporter and step_msg:
+        step_reporter(step_msg)
+
+    if isinstance(element_or_locator, tuple):
+        element = wait_and_scroll_to_element(driver, element_or_locator, timeout=timeout)
+    else:
+        element = element_or_locator
+        try:
+            driver.execute_script(
+                "arguments[0].scrollIntoView({block: 'center', inline: 'nearest', behavior: 'smooth'});",
+                element,
+            )
+        except Exception:
+            pass
+
+    highlight_element(driver, element)
+    
+    t = timeout or test_config.DEFAULT_WAIT_TIMEOUT
+    WebDriverWait(driver, t).until(EC.element_to_be_clickable(element))
+
+    try:
+        element.click()
+    except Exception:
+        driver.execute_script("arguments[0].click();", element)
+
+
+def safe_send_keys(
+    driver: webdriver.Chrome,
+    element_or_locator,
+    text: str,
+    clear_first: bool = True,
+    timeout: float = None,
+    step_reporter=None,
+    step_msg: str = None,
+):
+    """
+    Safely scrolls to an input element, highlights it, clears any contents,
+    and types the specified text.
+    """
+    if step_reporter and step_msg:
+        step_reporter(step_msg)
+
+    if isinstance(element_or_locator, tuple):
+        element = wait_and_scroll_to_element(driver, element_or_locator, timeout=timeout)
+    else:
+        element = element_or_locator
+
+    highlight_element(driver, element)
+
+    if clear_first:
+        element.clear()
+
+    element.send_keys(text)
 
 
 def capture_screenshot(driver: webdriver.Chrome, test_id: str, status: str = "STATE") -> str:

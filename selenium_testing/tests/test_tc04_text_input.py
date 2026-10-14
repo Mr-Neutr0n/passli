@@ -14,7 +14,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from .. import test_config
-from ..driver_factory import create_chrome_driver, capture_screenshot, pause
+from ..driver_factory import create_chrome_driver, capture_screenshot, pause, wait_for_page_ready
 
 
 def run_test(driver=None, record_callback=None):
@@ -28,26 +28,43 @@ def run_test(driver=None, record_callback=None):
     wait = WebDriverWait(driver, test_config.DEFAULT_WAIT_TIMEOUT)
 
     try:
-        # Navigate to login page containing text input fields
+        if record_callback:
+            record_callback("Navigating to login portal...")
+
         driver.get(f"{test_config.BASE_URL}/login/")
+        wait_for_page_ready(driver, step_reporter=record_callback, step_msg="Stabilizing login form elements...")
         pause()
 
-        # Step 1: Locate real text input field
+        if record_callback:
+            record_callback("Locating username input field...")
+
+        # Step 1: Locate real text input field, scroll into view, and highlight
         username_field = wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, test_config.SELECTORS["login_username"]))
+            EC.visibility_of_element_located((By.CSS_SELECTOR, test_config.SELECTORS["login_username"]))
         )
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest', behavior: 'smooth'});", username_field)
+        pause()
+
+        test_payload = "qa_student_automation_test"
+        if record_callback:
+            record_callback(f"Typing test string: '{test_payload}'...")
 
         # Step 2: Enter test data
-        test_payload = "qa_student_automation_test"
         username_field.clear()
         username_field.send_keys(test_payload)
         pause()
+
+        if record_callback:
+            record_callback("Verifying input value via DOM property...")
 
         # Step 3: Verify the entered value
         current_value = username_field.get_attribute("value")
         assert current_value == test_payload, (
             f"Input verification failed: Expected '{test_payload}', got '{current_value}'"
         )
+
+        if record_callback:
+            record_callback("Clearing input field and validating empty state...")
 
         # Step 4: Clear the field
         username_field.clear()

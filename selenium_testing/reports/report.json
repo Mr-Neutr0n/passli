@@ -1,8 +1,8 @@
 {
   "suite_type": "single",
-  "start_time": "2026-10-15T00:54:44.437109",
-  "end_time": "2026-10-15T00:54:57.180992",
-  "total_duration_seconds": 12.74,
+  "start_time": "2026-10-15T01:18:12.317195",
+  "end_time": "2026-10-15T01:18:47.120398",
+  "total_duration_seconds": 34.8,
   "total_tests": 1,
   "passed": 1,
   "failed": 0,
@@ -12,11 +12,11 @@
       "test_id": "TC05",
       "name": "Button Interaction & Cryptographic Token Generation",
       "status": "PASS",
-      "duration": 9.29,
-      "message": "Button click triggered key generation successfully: BWFG-4WGJ",
+      "duration": 31.36,
+      "message": "Button click triggered key generation successfully: EPE2-58ZU",
       "expected": "Button updates state label and generates dynamic token matching XXXX-XXXX format",
-      "actual": "Button feedback confirmed; new token 'BWFG-4WGJ' verified against regex pattern",
-      "screenshot": "C:\\Users\\Ali Nawaz\\Documents\\Projects\\passli\\selenium_testing\\screenshots\\TC05_PASS_20261015_005454.png",
+      "actual": "Button feedback confirmed; new token 'EPE2-58ZU' verified against regex pattern",
+      "screenshot": "C:\\Users\\Ali Nawaz\\Documents\\Projects\\passli\\selenium_testing\\screenshots\\TC05_PASS_20261015_011844.png",
       "category": "Normal",
       "description": "Click cryptographic generator button, verify state change and token pattern."
     }

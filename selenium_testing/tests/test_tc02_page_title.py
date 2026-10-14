@@ -2,7 +2,7 @@
 TC02 — Verify Page Title
 ========================
 Test Steps:
-1. Open the application.
+1. Open the application and wait for page to settle.
 2. Read the actual browser title.
 3. Compare it with the expected title obtained from the project.
 4. Report PASS if the assertion succeeds.
@@ -10,7 +10,7 @@ Test Steps:
 """
 
 from .. import test_config
-from ..driver_factory import create_chrome_driver, capture_screenshot, pause
+from ..driver_factory import create_chrome_driver, capture_screenshot, pause, wait_for_page_ready
 
 
 def run_test(driver=None, record_callback=None):
@@ -22,9 +22,16 @@ def run_test(driver=None, record_callback=None):
         driver = create_chrome_driver()
 
     try:
-        # Step 1: Open application
+        if record_callback:
+            record_callback("Opening application and checking page readiness...")
+
+        # Step 1: Open application and wait for readiness
         driver.get(test_config.BASE_URL)
+        wait_for_page_ready(driver, step_reporter=record_callback)
         pause()
+
+        if record_callback:
+            record_callback("Reading browser document title...")
 
         # Step 2: Read actual browser title
         actual_title = driver.title.strip()

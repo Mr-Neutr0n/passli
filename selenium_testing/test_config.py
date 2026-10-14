@@ -22,8 +22,8 @@ SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
 DEFAULT_URL = "http://127.0.0.1:8000"
 BASE_URL = os.environ.get("TARGET_URL", DEFAULT_URL).rstrip("/")
 
-# Explicit Wait Timeouts (seconds)
-DEFAULT_WAIT_TIMEOUT = float(os.environ.get("SELENIUM_WAIT_TIMEOUT", "10.0"))
+# Explicit Wait Timeouts (seconds) - Generous timeout for slow networks/computers
+DEFAULT_WAIT_TIMEOUT = float(os.environ.get("SELENIUM_WAIT_TIMEOUT", "20.0"))
 SHORT_WAIT_TIMEOUT = float(os.environ.get("SELENIUM_SHORT_TIMEOUT", "3.0"))
 
 # Browser Behavior
@@ -35,11 +35,27 @@ HEADLESS = os.environ.get("SELENIUM_HEADLESS", "false").lower() in ("true", "1",
 DEFAULT_STEP_DELAY = float(os.environ.get("SELENIUM_STEP_DELAY", "1.5"))
 STEP_DELAY = DEFAULT_STEP_DELAY
 
+# Network & Page Settlement Delay (seconds)
+# Essential on slow internet: pauses after initial page navigation so all fonts, styles,
+# and images complete rendering before test interactions begin.
+DEFAULT_PAGE_SETTLE_DELAY = float(os.environ.get("SELENIUM_PAGE_SETTLE_DELAY", "2.5"))
+PAGE_SETTLE_DELAY = DEFAULT_PAGE_SETTLE_DELAY
+
+# Slow Process Mode Presets (for slow internet & detailed presentation narration)
+SLOW_MODE_STEP_DELAY = 2.5
+SLOW_MODE_SETTLE_DELAY = 3.5
+
 
 def set_step_delay(delay_seconds: float):
     """Dynamically configure delay between steps for presentation narration."""
     global STEP_DELAY
     STEP_DELAY = max(0.0, float(delay_seconds))
+
+
+def set_page_settle_delay(delay_seconds: float):
+    """Dynamically configure page-load settlement grace period for slow internet."""
+    global PAGE_SETTLE_DELAY
+    PAGE_SETTLE_DELAY = max(0.0, float(delay_seconds))
 
 
 # Known local Chromedriver fallback path for Windows Chrome 155
