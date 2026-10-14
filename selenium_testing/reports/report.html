@@ -108,7 +108,7 @@
         <header class="header">
             <div class="title-box">
                 <h1>Passli — Test Execution Report</h1>
-                <p>Automated Selenium WebDriver Suite &bull; Execution Date: 2026-10-15 00:36:02</p>
+                <p>Automated Selenium WebDriver Suite &bull; Execution Date: 2026-10-15 00:54:44</p>
             </div>
             <div style="font-size: 0.85rem; color: var(--text-muted); text-align: right;">
                 Target: <span class="font-mono" style="color: #60a5fa;">http://127.0.0.1:8000</span><br>
@@ -119,19 +119,19 @@
         <section class="stats-grid">
             <div class="stat-card">
                 <div class="stat-label">Total Tests</div>
-                <div class="stat-val">14</div>
+                <div class="stat-val">1</div>
             </div>
             <div class="stat-card" style="border-left: 4px solid var(--pass-green);">
                 <div class="stat-label">Passed</div>
-                <div class="stat-val" style="color: var(--pass-green);">11</div>
+                <div class="stat-val" style="color: var(--pass-green);">1</div>
             </div>
             <div class="stat-card" style="border-left: 4px solid var(--fail-red);">
                 <div class="stat-label">Failed</div>
-                <div class="stat-val" style="color: var(--fail-red);">3</div>
+                <div class="stat-val" style="color: var(--fail-red);">0</div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Duration</div>
-                <div class="stat-val" style="color: #cbd5e1;">29.44s</div>
+                <div class="stat-val" style="color: #cbd5e1;">12.74s</div>
             </div>
         </section>
 
@@ -150,237 +150,19 @@
                 <tbody>
                     
         <tr>
-            <td class="font-mono"><strong>TC01</strong></td>
-            <td>
-                <div style="font-weight: 600;">Open Website & Maximize Window</div>
-                <div style="font-size: 0.8rem; color: #94a3b8;">Launch browser, load landing page, maximize window, verify hero visibility.</div>
-            </td>
-            <td><span class="badge badge-pass">PASS</span></td>
-            <td class="font-mono">2.6s</td>
-            <td>
-                <div style="font-size: 0.85rem;"><strong>Expected:</strong> Landing page loaded with visible hero title element</div>
-                <div style="font-size: 0.85rem; margin-top: 3px;"><strong>Actual:</strong> Hero title visible: 'Share only the records you choose.
-Never your acco...'</div>
-                
-            </td>
-            <td><a href="..\screenshots\TC01_PASS_20261015_003605.png" target="_blank" class="ss-link">View Screenshot</a></td>
-        </tr>
-        
-        <tr>
-            <td class="font-mono"><strong>TC02</strong></td>
-            <td>
-                <div style="font-weight: 600;">Verify Page Title</div>
-                <div style="font-size: 0.8rem; color: #94a3b8;">Read browser title and assert match with expected Passli brand title.</div>
-            </td>
-            <td><span class="badge badge-pass">PASS</span></td>
-            <td class="font-mono">0.6s</td>
-            <td>
-                <div style="font-size: 0.85rem;"><strong>Expected:</strong> Passli — Controlled Document Sharing & Ephemeral Vault</div>
-                <div style="font-size: 0.85rem; margin-top: 3px;"><strong>Actual:</strong> Passli — Controlled Document Sharing & Ephemeral Vault</div>
-                
-            </td>
-            <td><a href="..\screenshots\TC02_PASS_20261015_003606.png" target="_blank" class="ss-link">View Screenshot</a></td>
-        </tr>
-        
-        <tr>
-            <td class="font-mono"><strong>TC03</strong></td>
-            <td>
-                <div style="font-weight: 600;">Navigation, History (Back/Forward), and Refresh</div>
-                <div style="font-size: 0.8rem; color: #94a3b8;">Navigate to login, verify URL/DOM, test Back, Forward, and Page Refresh.</div>
-            </td>
-            <td><span class="badge badge-pass">PASS</span></td>
-            <td class="font-mono">2.49s</td>
-            <td>
-                <div style="font-size: 0.85rem;"><strong>Expected:</strong> Seamless page transition, history navigation, and persistence on refresh</div>
-                <div style="font-size: 0.85rem; margin-top: 3px;"><strong>Actual:</strong> Destination verified: http://127.0.0.1:8000/login/</div>
-                
-            </td>
-            <td><a href="..\screenshots\TC03_PASS_20261015_003608.png" target="_blank" class="ss-link">View Screenshot</a></td>
-        </tr>
-        
-        <tr>
-            <td class="font-mono"><strong>TC04</strong></td>
-            <td>
-                <div style="font-weight: 600;">Text Input (Entry, Value Verification, and Clear)</div>
-                <div style="font-size: 0.8rem; color: #94a3b8;">Locate username input, send keys, verify DOM value property, and clear.</div>
-            </td>
-            <td><span class="badge badge-pass">PASS</span></td>
-            <td class="font-mono">1.28s</td>
-            <td>
-                <div style="font-size: 0.85rem;"><strong>Expected:</strong> Field accepts 'qa_student_automation_test', reflects value, and clears to ''</div>
-                <div style="font-size: 0.85rem; margin-top: 3px;"><strong>Actual:</strong> Entered 'qa_student_automation_test', then cleared to empty string ''</div>
-                
-            </td>
-            <td><a href="..\screenshots\TC04_PASS_20261015_003610.png" target="_blank" class="ss-link">View Screenshot</a></td>
-        </tr>
-        
-        <tr>
             <td class="font-mono"><strong>TC05</strong></td>
             <td>
                 <div style="font-weight: 600;">Button Interaction & Cryptographic Token Generation</div>
                 <div style="font-size: 0.8rem; color: #94a3b8;">Click cryptographic generator button, verify state change and token pattern.</div>
             </td>
             <td><span class="badge badge-pass">PASS</span></td>
-            <td class="font-mono">1.27s</td>
+            <td class="font-mono">9.29s</td>
             <td>
                 <div style="font-size: 0.85rem;"><strong>Expected:</strong> Button updates state label and generates dynamic token matching XXXX-XXXX format</div>
-                <div style="font-size: 0.85rem; margin-top: 3px;"><strong>Actual:</strong> Button feedback confirmed; new token 'G3LT-HSVQ' verified against regex pattern</div>
+                <div style="font-size: 0.85rem; margin-top: 3px;"><strong>Actual:</strong> Button feedback confirmed; new token 'BWFG-4WGJ' verified against regex pattern</div>
                 
             </td>
-            <td><a href="..\screenshots\TC05_PASS_20261015_003611.png" target="_blank" class="ss-link">View Screenshot</a></td>
-        </tr>
-        
-        <tr>
-            <td class="font-mono"><strong>TC06</strong></td>
-            <td>
-                <div style="font-weight: 600;">Required-Field Form Validation</div>
-                <div style="font-size: 0.8rem; color: #94a3b8;">Submit empty login form, verify client-side validation blocks submission.</div>
-            </td>
-            <td><span class="badge badge-pass">PASS</span></td>
-            <td class="font-mono">1.32s</td>
-            <td>
-                <div style="font-size: 0.85rem;"><strong>Expected:</strong> Form halts submission on blank input; user retained on /login/</div>
-                <div style="font-size: 0.85rem; margin-top: 3px;"><strong>Actual:</strong> Retained on http://127.0.0.1:8000/login/; error state confirmed.</div>
-                
-            </td>
-            <td><a href="..\screenshots\TC06_PASS_20261015_003612.png" target="_blank" class="ss-link">View Screenshot</a></td>
-        </tr>
-        
-        <tr>
-            <td class="font-mono"><strong>TC07</strong></td>
-            <td>
-                <div style="font-weight: 600;">Invalid Authentication Handling</div>
-                <div style="font-size: 0.8rem; color: #94a3b8;">Submit nonexistent credentials, verify error alert display with proper message.</div>
-            </td>
-            <td><span class="badge badge-pass">PASS</span></td>
-            <td class="font-mono">4.38s</td>
-            <td>
-                <div style="font-size: 0.85rem;"><strong>Expected:</strong> Error alert displayed containing 'Invalid username or password'</div>
-                <div style="font-size: 0.85rem; margin-top: 3px;"><strong>Actual:</strong> Error alert visible with text: 'error
-Invalid username or password. Please try again.'</div>
-                
-            </td>
-            <td><a href="..\screenshots\TC07_PASS_20261015_003617.png" target="_blank" class="ss-link">View Screenshot</a></td>
-        </tr>
-        
-        <tr>
-            <td class="font-mono"><strong>TC08</strong></td>
-            <td>
-                <div style="font-weight: 600;">Sandbox Document Selector & Dynamic Recalculation</div>
-                <div style="font-size: 0.8rem; color: #94a3b8;">Toggle document checkboxes, verify real-time recalculation of count & MBs.</div>
-            </td>
-            <td><span class="badge badge-pass">PASS</span></td>
-            <td class="font-mono">1.19s</td>
-            <td>
-                <div style="font-size: 0.85rem;"><strong>Expected:</strong> Dynamic recalculation of count and cumulative file size upon checkbox toggle</div>
-                <div style="font-size: 0.85rem; margin-top: 3px;"><strong>Actual:</strong> Recalculated successfully to '1 selected (2.4 MB)'</div>
-                
-            </td>
-            <td><a href="..\screenshots\TC08_PASS_20261015_003618.png" target="_blank" class="ss-link">View Screenshot</a></td>
-        </tr>
-        
-        <tr>
-            <td class="font-mono"><strong>TC09</strong></td>
-            <td>
-                <div style="font-weight: 600;">Cryptographic Expiration Timer Selection</div>
-                <div style="font-size: 0.8rem; color: #94a3b8;">Click expiration pills, verify countdown telemetry label synchronizes.</div>
-            </td>
-            <td><span class="badge badge-pass">PASS</span></td>
-            <td class="font-mono">1.18s</td>
-            <td>
-                <div style="font-size: 0.85rem;"><strong>Expected:</strong> Telemetry card reflects selected duration ('15 mins')</div>
-                <div style="font-size: 0.85rem; margin-top: 3px;"><strong>Actual:</strong> Telemetry label successfully synced to '15 mins'</div>
-                
-            </td>
-            <td><a href="..\screenshots\TC09_PASS_20261015_003619.png" target="_blank" class="ss-link">View Screenshot</a></td>
-        </tr>
-        
-        <tr>
-            <td class="font-mono"><strong>TC10</strong></td>
-            <td>
-                <div style="font-weight: 600;">User Authentication & Dashboard Access</div>
-                <div style="font-size: 0.8rem; color: #94a3b8;">Authenticate valid user credentials, verify redirect to /dashboard/ & user pill.</div>
-            </td>
-            <td><span class="badge badge-pass">PASS</span></td>
-            <td class="font-mono">3.94s</td>
-            <td>
-                <div style="font-size: 0.85rem;"><strong>Expected:</strong> HTTP 302 redirect to /dashboard/ with active authenticated session controls</div>
-                <div style="font-size: 0.85rem; margin-top: 3px;"><strong>Actual:</strong> Landed on http://127.0.0.1:8000/dashboard/ with header: 'Q
-Personal Vault Dashboard
-Active security envelope for qa_test@passli.local
-upload_file
-Upload Record
-add_link
-Create Share Pass'</div>
-                
-            </td>
-            <td><a href="..\screenshots\TC10_PASS_20261015_003623.png" target="_blank" class="ss-link">View Screenshot</a></td>
-        </tr>
-        
-        <tr>
-            <td class="font-mono"><strong>TC11</strong></td>
-            <td>
-                <div style="font-weight: 600;">Secure Logout & Session Teardown</div>
-                <div style="font-size: 0.8rem; color: #94a3b8;">Perform session logout, verify session clearance and restore of public nav.</div>
-            </td>
-            <td><span class="badge badge-pass">PASS</span></td>
-            <td class="font-mono">0.77s</td>
-            <td>
-                <div style="font-size: 0.85rem;"><strong>Expected:</strong> Session teardown, redirect away from private routes, public nav restored</div>
-                <div style="font-size: 0.85rem; margin-top: 3px;"><strong>Actual:</strong> Landed on http://127.0.0.1:8000/ with public 'Sign In' link visible</div>
-                
-            </td>
-            <td><a href="..\screenshots\TC11_PASS_20261015_003624.png" target="_blank" class="ss-link">View Screenshot</a></td>
-        </tr>
-        
-        <tr>
-            <td class="font-mono"><strong>DEMO_FAIL_01</strong></td>
-            <td>
-                <div style="font-weight: 600;">[DEMO FAIL] Deliberate Title Mismatch</div>
-                <div style="font-size: 0.8rem; color: #94a3b8;">Compares actual title against intentionally incorrect university title.</div>
-            </td>
-            <td><span class="badge badge-demo-fail">FAIL</span></td>
-            <td class="font-mono">0.52s</td>
-            <td>
-                <div style="font-size: 0.85rem;"><strong>Expected:</strong> Deliberately incorrect title: 'University Grading Portal 2026 — Secure Student Gateway'</div>
-                <div style="font-size: 0.85rem; margin-top: 3px;"><strong>Actual:</strong> Selenium intercepted title mismatch: 'Passli — Controlled Document Sharing & Ephemeral Vault'</div>
-                <div class="fail-reason">Reason: [INTENTIONAL DEMO FAILURE] Title mismatch detected by Selenium! Expected: 'University Grading Portal 2026 — Secure Student Gateway', Actual: 'Passli — Controlled Document Sharing & Ephemeral Vault'</div>
-            </td>
-            <td><a href="..\screenshots\DEMO_FAIL_01_FAIL_20261015_003624.png" target="_blank" class="ss-link">View Screenshot</a></td>
-        </tr>
-        
-        <tr>
-            <td class="font-mono"><strong>DEMO_FAIL_02</strong></td>
-            <td>
-                <div style="font-weight: 600;">[DEMO FAIL] Deliberately Missing Element</div>
-                <div style="font-size: 0.8rem; color: #94a3b8;">Waits with 3.0s timeout for missing ghost selector to demo TimeoutException.</div>
-            </td>
-            <td><span class="badge badge-demo-fail">FAIL</span></td>
-            <td class="font-mono">3.7s</td>
-            <td>
-                <div style="font-size: 0.85rem;"><strong>Expected:</strong> Element '#deliberately-missing-ghost-element-xyz-999' visible within 3.0s</div>
-                <div style="font-size: 0.85rem; margin-top: 3px;"><strong>Actual:</strong> Selenium TimeoutException triggered cleanly as expected.</div>
-                <div class="fail-reason">Reason: [INTENTIONAL DEMO FAILURE] WebDriverWait timed out after 3.0s waiting for nonexistent element '#deliberately-missing-ghost-element-xyz-999'.</div>
-            </td>
-            <td><a href="..\screenshots\DEMO_FAIL_02_FAIL_20261015_003628.png" target="_blank" class="ss-link">View Screenshot</a></td>
-        </tr>
-        
-        <tr>
-            <td class="font-mono"><strong>DEMO_FAIL_03</strong></td>
-            <td>
-                <div style="font-weight: 600;">[DEMO FAIL] Deliberate Content Mismatch</div>
-                <div style="font-size: 0.8rem; color: #94a3b8;">Asserts hero copy contains legacy banking text to demo assertion failure.</div>
-            </td>
-            <td><span class="badge badge-demo-fail">FAIL</span></td>
-            <td class="font-mono">0.57s</td>
-            <td>
-                <div style="font-size: 0.85rem;"><strong>Expected:</strong> Hero title contains 'Welcome to the Legacy Plaintext Banking Portal'</div>
-                <div style="font-size: 0.85rem; margin-top: 3px;"><strong>Actual:</strong> Selenium assertion caught actual content: 'Share only the records you choose.
-Never your acco...'</div>
-                <div class="fail-reason">Reason: [INTENTIONAL DEMO FAILURE] Content assertion failed! Expected string 'Welcome to the Legacy Plaintext Banking Portal' not in actual text 'Share only the records you choose.
-Never your account creden...'</div>
-            </td>
-            <td><a href="..\screenshots\DEMO_FAIL_03_FAIL_20261015_003629.png" target="_blank" class="ss-link">View Screenshot</a></td>
+            <td><a href="..\screenshots\TC05_PASS_20261015_005454.png" target="_blank" class="ss-link">View Screenshot</a></td>
         </tr>
         
                 </tbody>

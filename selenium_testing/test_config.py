@@ -30,8 +30,17 @@ SHORT_WAIT_TIMEOUT = float(os.environ.get("SELENIUM_SHORT_TIMEOUT", "3.0"))
 # Default is False so students and evaluators can watch the browser execute live in screen recordings
 HEADLESS = os.environ.get("SELENIUM_HEADLESS", "false").lower() in ("true", "1", "yes")
 
-# Optional micro-pause between steps (seconds) to make browser actions clearly visible in presentation videos
-STEP_DELAY = float(os.environ.get("SELENIUM_STEP_DELAY", "0.3"))
+# Presentation Delay between actions (seconds)
+# Default set to 1.5s so student can narrate and show evaluator every action clearly
+DEFAULT_STEP_DELAY = float(os.environ.get("SELENIUM_STEP_DELAY", "1.5"))
+STEP_DELAY = DEFAULT_STEP_DELAY
+
+
+def set_step_delay(delay_seconds: float):
+    """Dynamically configure delay between steps for presentation narration."""
+    global STEP_DELAY
+    STEP_DELAY = max(0.0, float(delay_seconds))
+
 
 # Known local Chromedriver fallback path for Windows Chrome 155
 USER_PROFILE = os.environ.get("USERPROFILE", "")

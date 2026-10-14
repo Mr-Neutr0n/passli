@@ -3,6 +3,7 @@ Passli Live PASS/FAIL Desktop Automation Dashboard
 ==================================================
 Compact, professional dark-themed Tkinter GUI for real-time monitoring
 of Selenium WebDriver test execution. Built for live university presentations.
+Includes dynamic presentation pacing controls and individual test execution.
 """
 
 import os
@@ -24,8 +25,8 @@ class PassliLiveDashboard:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title("Passli — Selenium Test Automation Dashboard")
-        self.root.geometry("820x640")
-        self.root.minsize(680, 520)
+        self.root.geometry("860x700")
+        self.root.minsize(720, 560)
 
         # Stay on top by default so recording captures both browser & dashboard
         self.always_on_top = True
@@ -40,6 +41,10 @@ class PassliLiveDashboard:
         self.test_items = {}  # test_id -> tree item id
         self.current_suite = "normal"
         self.is_running = False
+        self.selected_test_id = None
+
+        # Master Catalog
+        self.all_tests = NORMAL_TESTS + DEMO_TESTS
 
         # Theme Colors (Passli Dark Aesthetic)
         self.c_bg_main = "#0b1120"
@@ -95,14 +100,24 @@ class PassliLiveDashboard:
             thickness=10,
         )
 
+        # Combobox styling
+        self.style.configure(
+            "TCombobox",
+            fieldbackground=self.c_bg_card,
+            background=self.c_bg_header,
+            foreground=self.c_text_main,
+            selectbackground="#1e3a8a",
+            selectforeground="#ffffff",
+        )
+
     def _build_ui(self):
-        """Build UI layout containing header, metrics cards, treeview, and controls."""
+        """Build UI layout containing header, metrics cards, treeview, controls, and speed bar."""
         main_container = tk.Frame(self.root, bg=self.c_bg_main, padx=14, pady=12)
         main_container.pack(fill=tk.BOTH, expand=True)
 
         # ----------------- Top Header -----------------
         header_frame = tk.Frame(main_container, bg=self.c_bg_main)
-        header_frame.pack(fill=tk.X, pady=(0, 10))
+        header_frame.pack(fill=tk.X, pady=(0, 8))
 
         title_box = tk.Frame(header_frame, bg=self.c_bg_main)
         title_box.pack(side=tk.LEFT)
@@ -159,13 +174,54 @@ class PassliLiveDashboard:
 
         # ----------------- Metric Stat Cards -----------------
         metrics_frame = tk.Frame(main_container, bg=self.c_bg_main)
-        metrics_frame.pack(fill=tk.X, pady=(0, 10))
+        metrics_frame.pack(fill=tk.X, pady=(0, 8))
 
         self.total_card = self._create_card(metrics_frame, "TOTAL TESTS", "0", self.c_blue)
         self.passed_card = self._create_card(metrics_frame, "PASSED", "0", self.c_green)
         self.failed_card = self._create_card(metrics_frame, "FAILED", "0", self.c_red)
         self.skipped_card = self._create_card(metrics_frame, "SKIPPED", "0", self.c_yellow)
         self.duration_card = self._create_card(metrics_frame, "DURATION", "0.0s", "#cbd5e1")
+
+        # ----------------- Speed & Pacing Bar (Presentation Slowdown) -----------------
+        pacing_frame = tk.Frame(main_container, bg=self.c_bg_card, bd=1, relief="solid", padx=10, pady=6)
+        pacing_frame.pack(fill=tk.X, pady=(0, 8))
+
+        speed_lbl = tk.Label(
+            pacing_frame,
+            text="⏱ Execution Pacing / Narration Speed:",
+            font=("Segoe UI", 8, "bold"),
+            fg="#38bdf8",
+            bg=self.c_bg_card,
+        )
+        speed_lbl.pack(side=tk.LEFT, padx=(0, 8))
+
+        self.speed_options = {
+            "Presentation Mode (1.5s delay) — Recommended": 1.5,
+            "Slow Narration (2.5s delay) — Extra Time to Explain": 2.5,
+            "Ultra Slow (4.0s delay) — Deep Dive": 4.0,
+            "Moderate (1.0s delay)": 1.0,
+            "Fast (0.3s delay)": 0.3,
+        }
+
+        self.speed_combo = ttk.Combobox(
+            pacing_frame,
+            values=list(self.speed_options.keys()),
+            state="readonly",
+            width=46,
+            font=("Segoe UI", 8),
+        )
+        self.speed_combo.current(0)
+        self.speed_combo.bind("<<ComboboxSelected>>", self._on_speed_changed)
+        self.speed_combo.pack(side=tk.LEFT)
+
+        speed_hint = tk.Label(
+            pacing_frame,
+            text="(Pauses at every step so you can speak and show actions)",
+            font=("Segoe UI", 7, "italic"),
+            fg=self.c_text_muted,
+            bg=self.c_bg_card,
+        )
+        speed_hint.pack(side=tk.LEFT, padx=(8, 0))
 
         # ----------------- Progress Bar -----------------
         self.prog_var = tk.DoubleVar(value=0.0)
@@ -175,11 +231,11 @@ class PassliLiveDashboard:
             maximum=100.0,
             style="Custom.Horizontal.TProgressbar",
         )
-        self.progress_bar.pack(fill=tk.X, pady=(0, 10))
+        self.progress_bar.pack(fill=tk.X, pady=(0, 8))
 
         # ----------------- Live Test Matrix Treeview -----------------
         tree_frame = tk.Frame(main_container, bg=self.c_bg_card, bd=1, relief="solid")
-        tree_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        tree_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 8))
 
         columns = ("id", "name", "category", "status", "duration", "details")
         self.tree = ttk.Treeview(
@@ -198,11 +254,11 @@ class PassliLiveDashboard:
         self.tree.heading("details", text="Result / Failure Details")
 
         self.tree.column("id", width=75, anchor="center")
-        self.tree.column("name", width=210, anchor="w")
+        self.tree.column("name", width=220, anchor="w")
         self.tree.column("category", width=95, anchor="center")
         self.tree.column("status", width=80, anchor="center")
         self.tree.column("duration", width=65, anchor="center")
-        self.tree.column("details", width=250, anchor="w")
+        self.tree.column("details", width=260, anchor="w")
 
         # Custom tag color coding
         self.tree.tag_configure("PASS", foreground=self.c_green)
@@ -217,8 +273,67 @@ class PassliLiveDashboard:
         self.tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
-        # Double-click item shows popup detail
+        # Selection and click bindings
+        self.tree.bind("<<TreeviewSelect>>", self._on_tree_select)
         self.tree.bind("<Double-1>", self._on_tree_double_click)
+
+        # ----------------- Individual Test Quick-Run Bar -----------------
+        single_run_frame = tk.Frame(main_container, bg=self.c_bg_main)
+        single_run_frame.pack(fill=tk.X, pady=(0, 8))
+
+        single_lbl = tk.Label(
+            single_run_frame,
+            text="🎯 Run Individual Test:",
+            font=("Segoe UI", 9, "bold"),
+            fg="#f8fafc",
+            bg=self.c_bg_main,
+        )
+        single_lbl.pack(side=tk.LEFT, padx=(0, 6))
+
+        # Test picker combobox
+        test_dropdown_values = [f"{t['id']} — {t['name']}" for t in self.all_tests]
+        self.individual_combo = ttk.Combobox(
+            single_run_frame,
+            values=test_dropdown_values,
+            state="readonly",
+            width=42,
+            font=("Segoe UI", 8),
+        )
+        self.individual_combo.current(0)
+        self.individual_combo.pack(side=tk.LEFT, padx=(0, 6))
+
+        self.btn_run_individual_dropdown = tk.Button(
+            single_run_frame,
+            text="▶ Run Selected from List",
+            font=("Segoe UI", 8, "bold"),
+            bg="#059669",
+            fg="#ffffff",
+            activebackground="#047857",
+            activeforeground="#ffffff",
+            bd=0,
+            padx=10,
+            pady=4,
+            cursor="hand2",
+            command=self._run_individual_from_combo,
+        )
+        self.btn_run_individual_dropdown.pack(side=tk.LEFT, padx=(0, 6))
+
+        self.btn_run_selected = tk.Button(
+            single_run_frame,
+            text="▶ Run Clicked Table Row",
+            font=("Segoe UI", 8, "bold"),
+            bg="#0284c7",
+            fg="#ffffff",
+            activebackground="#0369a1",
+            activeforeground="#ffffff",
+            bd=0,
+            padx=10,
+            pady=4,
+            state=tk.DISABLED,
+            cursor="hand2",
+            command=self._run_selected_tree_item,
+        )
+        self.btn_run_selected.pack(side=tk.LEFT)
 
         # ----------------- Action Buttons Toolbar -----------------
         btn_frame = tk.Frame(main_container, bg=self.c_bg_main)
@@ -356,6 +471,12 @@ class PassliLiveDashboard:
         val.pack(anchor="w")
         return val
 
+    def _on_speed_changed(self, event=None):
+        """Update step delay dynamically from dropdown."""
+        selected_label = self.speed_combo.get()
+        delay = self.speed_options.get(selected_label, 1.5)
+        test_config.set_step_delay(delay)
+
     def _toggle_pin(self):
         """Toggle always-on-top window property."""
         self.always_on_top = not self.always_on_top
@@ -365,12 +486,14 @@ class PassliLiveDashboard:
             fg="#38bdf8" if self.always_on_top else "#94a3b8",
         )
 
-    def _populate_initial_tree(self, suite_type: str):
+    def _populate_initial_tree(self, suite_type: str, single_test_id: str = None):
         """Populate Treeview rows with initial WAITING states."""
         self.tree.delete(*self.tree.get_children())
         self.test_items.clear()
 
-        if suite_type == "normal":
+        if suite_type == "single" and single_test_id:
+            tests = [t for t in self.all_tests if t["id"] == single_test_id]
+        elif suite_type == "normal":
             tests = NORMAL_TESTS
         elif suite_type == "demo":
             tests = DEMO_TESTS
@@ -394,28 +517,63 @@ class PassliLiveDashboard:
         self.duration_card.config(text="0.0s")
         self.prog_var.set(0.0)
 
-    def _start_suite(self, suite_type: str):
-        """Launch background worker thread to run selected test suite."""
+    def _on_tree_select(self, event=None):
+        """Handle user clicking a table row to enable single test run."""
+        selected_item = self.tree.focus()
+        if not selected_item:
+            return
+        vals = self.tree.item(selected_item, "values")
+        if vals:
+            self.selected_test_id = vals[0]
+            self.btn_run_selected.config(
+                text=f"▶ Run {self.selected_test_id} Now",
+                state=tk.NORMAL if not self.is_running else tk.DISABLED,
+            )
+
+    def _run_selected_tree_item(self):
+        """Run single test clicked in treeview."""
+        if self.selected_test_id and not self.is_running:
+            self._start_suite("single", single_test_id=self.selected_test_id)
+
+    def _run_individual_from_combo(self):
+        """Run single test selected from dropdown."""
+        if self.is_running:
+            return
+        selected_text = self.individual_combo.get()
+        t_id = selected_text.split(" — ")[0].strip()
+        self._start_suite("single", single_test_id=t_id)
+
+    def _start_suite(self, suite_type: str, single_test_id: str = None):
+        """Launch background worker thread to run selected test suite or single test."""
         if self.is_running:
             return
 
+        self._on_speed_changed()
         self.is_running = True
         self.current_suite = suite_type
-        self._populate_initial_tree(suite_type)
+        self._populate_initial_tree(suite_type, single_test_id=single_test_id)
 
         # Update button states
         self.btn_normal.config(state=tk.DISABLED)
         self.btn_demo.config(state=tk.DISABLED)
         self.btn_all.config(state=tk.DISABLED)
         self.btn_clear.config(state=tk.DISABLED)
+        self.btn_run_selected.config(state=tk.DISABLED)
+        self.btn_run_individual_dropdown.config(state=tk.DISABLED)
         self.btn_stop.config(state=tk.NORMAL)
 
-        self.status_badge.config(text="RUNNING", bg="#854d0e", fg="#fef08a")
+        badge_text = f"RUNNING ({single_test_id})" if single_test_id else "RUNNING"
+        self.status_badge.config(text=badge_text, bg="#854d0e", fg="#fef08a")
 
         # Spawn background thread
         self.worker_thread = threading.Thread(
             target=self.runner.run_suite,
-            kwargs={"suite_type": suite_type, "headless": test_config.HEADLESS},
+            kwargs={
+                "suite_type": suite_type,
+                "single_test_id": single_test_id,
+                "headless": test_config.HEADLESS,
+                "step_delay": test_config.STEP_DELAY,
+            },
             daemon=True,
         )
         self.worker_thread.start()
@@ -433,6 +591,8 @@ class PassliLiveDashboard:
             return
         self._populate_initial_tree(self.current_suite)
         self.status_badge.config(text="IDLE", bg="#1e293b", fg="#94a3b8")
+        self.selected_test_id = None
+        self.btn_run_selected.config(text="▶ Run Clicked Table Row", state=tk.DISABLED)
 
     def _open_html_report(self):
         """Open the generated HTML report in default browser."""
@@ -450,14 +610,25 @@ class PassliLiveDashboard:
             webbrowser.open(test_config.SCREENSHOTS_DIR.as_uri())
 
     def _on_tree_double_click(self, event):
-        """Show detailed message dialog when double clicking a test row."""
+        """Show prompt on double click allowing user to run this single test or view info."""
         selected_item = self.tree.focus()
-        if not selected_item:
+        if not selected_item or self.is_running:
             return
         vals = self.tree.item(selected_item, "values")
-        if vals:
-            msg = f"Test ID: {vals[0]}\nName: {vals[1]}\nCategory: {vals[2]}\nStatus: {vals[3]}\nDuration: {vals[4]}\n\nDetails:\n{vals[5]}"
-            messagebox.showinfo(f"Test Details — {vals[0]}", msg)
+        if not vals:
+            return
+
+        t_id = vals[0]
+        t_name = vals[1]
+        t_status = vals[3]
+        t_details = vals[5]
+
+        resp = messagebox.askyesno(
+            f"Run Individual Test — {t_id}",
+            f"Test Case: {t_id} — {t_name}\nStatus: {t_status}\n\nDetails: {t_details}\n\nDo you want to run this test individually in the browser now?"
+        )
+        if resp:
+            self._start_suite("single", single_test_id=t_id)
 
     def _process_queue(self):
         """Check for updates from test runner worker thread (thread-safe)."""
@@ -518,6 +689,9 @@ class PassliLiveDashboard:
                     self.btn_demo.config(state=tk.NORMAL)
                     self.btn_all.config(state=tk.NORMAL)
                     self.btn_clear.config(state=tk.NORMAL)
+                    self.btn_run_individual_dropdown.config(state=tk.NORMAL)
+                    if self.selected_test_id:
+                        self.btn_run_selected.config(state=tk.NORMAL)
                     self.btn_stop.config(state=tk.DISABLED)
 
                     failed = data.get("failed", 0)
@@ -526,7 +700,7 @@ class PassliLiveDashboard:
                     self.duration_card.config(text=f"{dur}s")
 
                     if failed == 0:
-                        self.status_badge.config(text="COMPLETED (ALL PASS)", bg="#065f46", fg="#a7f3d0")
+                        self.status_badge.config(text="COMPLETED (PASS)", bg="#065f46", fg="#a7f3d0")
                     elif suite_t == "demo":
                         self.status_badge.config(text="DEMO COMPLETED", bg="#854d0e", fg="#fef08a")
                     else:
@@ -538,6 +712,7 @@ class PassliLiveDashboard:
                     self.btn_demo.config(state=tk.NORMAL)
                     self.btn_all.config(state=tk.NORMAL)
                     self.btn_clear.config(state=tk.NORMAL)
+                    self.btn_run_individual_dropdown.config(state=tk.NORMAL)
                     self.btn_stop.config(state=tk.DISABLED)
                     self.status_badge.config(text="ERROR", bg="#991b1b", fg="#ffffff")
                     messagebox.showerror("Execution Error", data.get("error", "Unknown error"))

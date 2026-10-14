@@ -173,14 +173,25 @@ class TestSuiteRunner:
         self.stop_requested.set()
         logger.warning("Stop request signaled to test suite runner.")
 
-    def run_suite(self, suite_type: str = "normal", headless: bool = None):
+    def run_suite(
+        self,
+        suite_type: str = "normal",
+        single_test_id: str = None,
+        headless: bool = None,
+        step_delay: float = None,
+    ):
         """
-        Run selected test suite.
-        suite_type can be 'normal', 'demo', or 'all'.
+        Run selected test suite or individual test.
+        suite_type can be 'normal', 'demo', 'all', or 'single'.
+        single_test_id: ID of specific test when suite_type is 'single' (e.g. 'TC05').
+        step_delay: Presentation pause between actions in seconds.
         """
         if self.is_running:
             logger.warning("Run requested while another suite is already running.")
             return
+
+        if step_delay is not None:
+            test_config.set_step_delay(step_delay)
 
         self.is_running = True
         self.stop_requested.clear()
@@ -188,7 +199,17 @@ class TestSuiteRunner:
         self.start_time = datetime.now()
 
         # Select test list
-        if suite_type == "normal":
+        all_available = NORMAL_TESTS + DEMO_TESTS
+        if suite_type == "single" and single_test_id:
+            matched = [t for t in all_available if t["id"].upper() == single_test_id.upper()]
+            if not matched:
+                err_msg = f"Test ID '{single_test_id}' not found in catalog."
+                logger.error(err_msg)
+                self.post_update("SUITE_ERROR", {"error": err_msg})
+                self.is_running = False
+                return
+            tests_to_run = matched
+        elif suite_type == "normal":
             tests_to_run = list(NORMAL_TESTS)
         elif suite_type == "demo":
             tests_to_run = list(DEMO_TESTS)
@@ -196,7 +217,8 @@ class TestSuiteRunner:
             tests_to_run = list(NORMAL_TESTS) + list(DEMO_TESTS)
 
         total_tests = len(tests_to_run)
-        logger.info(f"=== Starting Test Suite: {suite_type.upper()} ({total_tests} Tests) ===")
+        suite_label = f"INDIVIDUAL TEST: {single_test_id}" if suite_type == "single" else suite_type.upper()
+        logger.info(f"=== Starting Test Suite: {suite_label} ({total_tests} Tests, Delay: {test_config.STEP_DELAY}s) ===")
         
         self.post_update("SUITE_START", {
             "suite_type": suite_type,

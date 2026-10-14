@@ -95,7 +95,11 @@ def capture_screenshot(driver: webdriver.Chrome, test_id: str, status: str = "ST
         return ""
 
 
-def pause():
-    """Micro-pause between actions to ensure browser operations are visually clear during video demos."""
-    if test_config.STEP_DELAY > 0:
-        time.sleep(test_config.STEP_DELAY)
+def pause(custom_delay=None):
+    """
+    Pacing pause between actions so students can explain what is happening
+    and evaluators can observe every browser interaction clearly.
+    """
+    delay = custom_delay if custom_delay is not None else test_config.STEP_DELAY
+    if delay and delay > 0:
+        time.sleep(delay)

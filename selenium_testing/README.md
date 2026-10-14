@@ -77,7 +77,19 @@ The dashboard is designed for high visual appeal and clear university video pres
 - **Progress Bar**: Smooth animated completion bar reflecting test suite progress.
 - **Live Test Matrix**: Displays Test ID, Name, Category, Live Status (`WAITING`, `RUNNING`, `PASS`, `FAIL`), and Duration.
 - **Always-on-Top Pin (`📌 On Top: ON`)**: Pins the window above the browser for clean side-by-side video recording.
-- **Action Buttons**:
+- **Execution Pacing & Narration Speed (Slowdown Controls)**:
+  - `⏱ Execution Pacing / Narration Speed`: Adjusts the pause time at every step so you have ample time to speak and explain what is happening on screen to your professor.
+  - Options:
+    - `Presentation Mode (1.5s delay)` *(Recommended default for screen recording)*
+    - `Slow Narration (2.5s delay)` *(Extra time for detailed spoken explanation)*
+    - `Ultra Slow (4.0s delay)` *(Deep dive analysis)*
+    - `Moderate (1.0s delay)`
+    - `Fast (0.3s delay)`
+- **Run Individual Tests**:
+  - **Option A (Dropdown)**: Select any test from the `🎯 Run Individual Test` dropdown and click `▶ Run Selected from List`.
+  - **Option B (Table Row)**: Click on any test row in the live matrix and click `▶ Run [ID] Now`.
+  - **Option C (Double Click)**: Double-click any test row in the table to immediately run that specific test in the browser.
+- **Suite Action Buttons**:
   - `▶ Run Normal Suite (11)`: Runs all 11 legitimate application tests. All tests pass with real DOM assertions.
   - `⚠ Run Intentional Failures (3)`: Runs the 3 controlled negative demonstration tests for showing error handling.
   - `⚡ Run All (14)`: Runs the combined suite (11 PASS + 3 DEMO FAIL) for full evaluation.
@@ -90,20 +102,29 @@ The dashboard is designed for high visual appeal and clear university video pres
 
 ## 4. Command-Line (CLI) Execution Options
 
-If you prefer terminal execution or want to run tests headlessly:
+You can also run full suites or individual tests via the command line:
 
 ```powershell
-# Run normal application test suite
-python selenium_testing/main.py --cli --suite normal
+# Run a specific individual test slowly for recording (e.g., TC05 button test with 2.0s pacing)
+python selenium_testing/main.py --test TC05 --delay 2.0
 
-# Run controlled negative demonstrations only
+# Run TC01 (Open & Maximize) individually
+python selenium_testing/main.py --test TC01 --delay 1.5
+
+# Run TC10 (User Login) individually
+python selenium_testing/main.py --test TC10 --delay 1.5
+
+# Run DEMO_FAIL_02 (Missing Element Demo) individually
+python selenium_testing/main.py --test DEMO_FAIL_02
+
+# Run full normal suite with custom narration delay (e.g. 2.0 seconds per step)
+python selenium_testing/main.py --cli --suite normal --delay 2.0
+
+# Run intentional failure demonstrations only
 python selenium_testing/main.py --cli --suite demo
 
 # Run all 14 tests headlessly
 python selenium_testing/main.py --cli --suite all --headless
-
-# Test against a remote deployment URL
-python selenium_testing/main.py --cli --suite normal --url https://web-production-c1bd05e.up.railway.app
 ```
 
 ---
