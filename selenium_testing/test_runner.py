@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 
 from . import test_config
-from .driver_factory import create_chrome_driver
+from .driver_factory import create_chrome_driver, get_shared_driver, close_shared_driver
 
 # Import all individual test modules
 from .tests import (
@@ -29,6 +29,11 @@ from .tests import (
     test_tc08_sandbox_selector,
     test_tc09_expiry_selector,
     test_tc10_valid_auth,
+    test_tc12_dashboard_inspection,
+    test_tc13_vault_documents,
+    test_tc14_document_upload,
+    test_tc15_share_management,
+    test_tc16_audit_trail,
     test_tc11_logout_session,
     test_negative_demonstrations,
 )
@@ -46,86 +51,126 @@ if not logger.handlers:
     logger.addHandler(sh)
 
 
-# Master Test Case Catalog
-NORMAL_TESTS = [
+# Master Test Case Catalog — Full Website Coverage (16 Test Cases)
+FULL_WEBSITE_TESTS = [
     {
         "id": "TC01",
         "name": "Open Website & Maximize Window",
         "runner": test_tc01_open_website.run_test,
-        "category": "Normal",
+        "category": "Public",
         "description": "Launch browser, load landing page, maximize window, verify hero visibility.",
     },
     {
         "id": "TC02",
         "name": "Verify Page Title",
         "runner": test_tc02_page_title.run_test,
-        "category": "Normal",
+        "category": "Public",
         "description": "Read browser title and assert match with expected Passli brand title.",
     },
     {
         "id": "TC03",
         "name": "Navigation & History Testing",
         "runner": test_tc03_navigation.run_test,
-        "category": "Normal",
+        "category": "Public",
         "description": "Navigate to login, verify URL/DOM, test Back, Forward, and Page Refresh.",
     },
     {
         "id": "TC04",
         "name": "Text Input & Clear Validation",
         "runner": test_tc04_text_input.run_test,
-        "category": "Normal",
+        "category": "Public",
         "description": "Locate username input, send keys, verify DOM value property, and clear.",
     },
     {
         "id": "TC05",
         "name": "Button Dynamic Behavior",
         "runner": test_tc05_button.run_test,
-        "category": "Normal",
+        "category": "Public",
         "description": "Click cryptographic generator button, verify state change and token pattern.",
     },
     {
         "id": "TC06",
         "name": "Required-Field Form Validation",
         "runner": test_tc06_form_validation.run_test,
-        "category": "Normal",
+        "category": "Public",
         "description": "Submit empty login form, verify client-side validation blocks submission.",
     },
     {
         "id": "TC07",
         "name": "Invalid Authentication Handling",
         "runner": test_tc07_invalid_login.run_test,
-        "category": "Normal",
+        "category": "Public",
         "description": "Submit nonexistent credentials, verify error alert display with proper message.",
     },
     {
         "id": "TC08",
         "name": "Sandbox Document Selector",
         "runner": test_tc08_sandbox_selector.run_test,
-        "category": "Normal",
+        "category": "Public",
         "description": "Toggle document checkboxes, verify real-time recalculation of count & MBs.",
     },
     {
         "id": "TC09",
         "name": "Expiration Timer Selection",
         "runner": test_tc09_expiry_selector.run_test,
-        "category": "Normal",
+        "category": "Public",
         "description": "Click expiration pills, verify countdown telemetry label synchronizes.",
     },
     {
         "id": "TC10",
         "name": "Valid User Authentication",
         "runner": test_tc10_valid_auth.run_test,
-        "category": "Normal",
+        "category": "Auth",
         "description": "Authenticate valid user credentials, verify redirect to /dashboard/ & user pill.",
+    },
+    {
+        "id": "TC12",
+        "name": "Vault Dashboard & Telemetry Inspection",
+        "runner": test_tc12_dashboard_inspection.run_test,
+        "category": "Authenticated",
+        "description": "Inspect personalized greeting, Zero-Knowledge status bar, and 4 metric stat cards.",
+    },
+    {
+        "id": "TC13",
+        "name": "Encrypted Document Vault & Category Filter",
+        "runner": test_tc13_vault_documents.run_test,
+        "category": "Authenticated",
+        "description": "Navigate to vault, verify document cards, test category pills & real-time search.",
+    },
+    {
+        "id": "TC14",
+        "name": "Document Upload Portal & Security Form",
+        "runner": test_tc14_document_upload.run_test,
+        "category": "Authenticated",
+        "description": "Inspect AES-256 dropzone, test document title input & category domain selection.",
+    },
+    {
+        "id": "TC15",
+        "name": "Ephemeral Share Pass Management & Creation",
+        "runner": test_tc15_share_management.run_test,
+        "category": "Authenticated",
+        "description": "Inspect Share Pass generation form, checklist, TTL settings, and active passes list.",
+    },
+    {
+        "id": "TC16",
+        "name": "Cryptographic Security Audit Trail",
+        "runner": test_tc16_audit_trail.run_test,
+        "category": "Authenticated",
+        "description": "Inspect access audit trail, verified key unlocks, and session telemetry stream.",
     },
     {
         "id": "TC11",
         "name": "Secure Logout & Session Teardown",
         "runner": test_tc11_logout_session.run_test,
-        "category": "Normal",
+        "category": "Auth",
         "description": "Perform session logout, verify session clearance and restore of public nav.",
     },
 ]
+
+# Aliases for suite selection
+NORMAL_TESTS = FULL_WEBSITE_TESTS
+CORE_ASSIGNMENT_TESTS = [t for t in FULL_WEBSITE_TESTS if t["id"] in ("TC01", "TC02", "TC03", "TC04", "TC05", "TC06", "TC07", "TC08", "TC09", "TC10", "TC11")]
+AUTHENTICATED_TESTS = [t for t in FULL_WEBSITE_TESTS if t["id"] in ("TC10", "TC12", "TC13", "TC14", "TC15", "TC16")]
 
 DEMO_TESTS = [
     {
@@ -204,7 +249,7 @@ class TestSuiteRunner:
         self.start_time = datetime.now()
 
         # Select test list
-        all_available = NORMAL_TESTS + DEMO_TESTS
+        all_available = FULL_WEBSITE_TESTS + DEMO_TESTS
         if suite_type == "single" and single_test_id:
             matched = [t for t in all_available if t["id"].upper() == single_test_id.upper()]
             if not matched:
@@ -214,12 +259,16 @@ class TestSuiteRunner:
                 self.is_running = False
                 return
             tests_to_run = matched
-        elif suite_type == "normal":
-            tests_to_run = list(NORMAL_TESTS)
+        elif suite_type in ("normal", "full"):
+            tests_to_run = list(FULL_WEBSITE_TESTS)
+        elif suite_type == "core":
+            tests_to_run = list(CORE_ASSIGNMENT_TESTS)
+        elif suite_type in ("auth", "authenticated"):
+            tests_to_run = list(AUTHENTICATED_TESTS)
         elif suite_type == "demo":
             tests_to_run = list(DEMO_TESTS)
         else:
-            tests_to_run = list(NORMAL_TESTS) + list(DEMO_TESTS)
+            tests_to_run = list(FULL_WEBSITE_TESTS) + list(DEMO_TESTS)
 
         total_tests = len(tests_to_run)
         suite_label = f"INDIVIDUAL TEST: {single_test_id}" if suite_type == "single" else suite_type.upper()
@@ -235,11 +284,11 @@ class TestSuiteRunner:
         failed_count = 0
         skipped_count = 0
 
-        # Launch a single dedicated browser session to keep execution smooth and visual
+        # Launch or reuse dedicated Chrome browser session (keeps window open)
         driver = None
         try:
-            logger.info("Initializing automated Chrome WebDriver session...")
-            driver = create_chrome_driver(headless=headless)
+            logger.info("Initializing or reusing Chrome WebDriver session...")
+            driver = get_shared_driver(headless=headless)
         except Exception as e:
             logger.error(f"Failed to initialize driver: {e}")
             self.post_update("SUITE_ERROR", {"error": str(e)})
@@ -323,12 +372,18 @@ class TestSuiteRunner:
                 })
 
         finally:
-            if driver:
+            if driver and not test_config.KEEP_BROWSER_OPEN:
                 try:
                     driver.quit()
                     logger.info("WebDriver session closed cleanly.")
                 except Exception as e:
                     logger.warning(f"Error closing driver: {e}")
+            elif driver and test_config.KEEP_BROWSER_OPEN:
+                logger.info("Keeping Chrome browser window OPEN for class presentation.")
+                self.post_update("TEST_STEP", {
+                    "test_id": "INFO",
+                    "step": "📌 Execution finished. Chrome browser kept OPEN on screen for class presentation.",
+                })
 
         self.end_time = datetime.now()
         total_duration = round((self.end_time - self.start_time).total_seconds(), 2)

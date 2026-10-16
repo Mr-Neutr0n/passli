@@ -45,6 +45,9 @@ PAGE_SETTLE_DELAY = DEFAULT_PAGE_SETTLE_DELAY
 SLOW_MODE_STEP_DELAY = 2.5
 SLOW_MODE_SETTLE_DELAY = 3.5
 
+# Keep Browser Window Open after completion (ideal for live class presentations)
+KEEP_BROWSER_OPEN = os.environ.get("SELENIUM_KEEP_OPEN", "true").lower() in ("true", "1", "yes")
+
 
 def set_step_delay(delay_seconds: float):
     """Dynamically configure delay between steps for presentation narration."""
@@ -56,6 +59,12 @@ def set_page_settle_delay(delay_seconds: float):
     """Dynamically configure page-load settlement grace period for slow internet."""
     global PAGE_SETTLE_DELAY
     PAGE_SETTLE_DELAY = max(0.0, float(delay_seconds))
+
+
+def set_keep_browser_open(keep_open: bool):
+    """Configure whether browser window remains open after test execution."""
+    global KEEP_BROWSER_OPEN
+    KEEP_BROWSER_OPEN = bool(keep_open)
 
 
 # Known local Chromedriver fallback path for Windows Chrome 155
@@ -78,6 +87,11 @@ TEST_PASSWORD = os.environ.get("PASSLI_TEST_PASS", "PassliQA2026!Secure")
 EXPECTED_HOME_TITLE = "Passli — Controlled Document Sharing & Ephemeral Vault"
 EXPECTED_LOGIN_TITLE = "Sign In — Passli Personal Vault"
 EXPECTED_REGISTER_TITLE = "Create Personal Vault — Passli"
+EXPECTED_DASHBOARD_TITLE = "Personal Vault Dashboard — Passli"
+EXPECTED_DOCUMENTS_TITLE = "Personal Document Vault — Passli"
+EXPECTED_UPLOAD_TITLE = "Upload Document Record — Passli Vault"
+EXPECTED_SHARE_CREATE_TITLE = "Create Share Pass — Passli Personal Vault"
+EXPECTED_AUDIT_TITLE = "Cryptographic Access Audit Trail — Passli Vault"
 
 # Selectors Map (Real DOM selectors from Passli templates)
 SELECTORS = {
@@ -105,10 +119,39 @@ SELECTORS = {
     "login_submit": '[data-testid="login-submit-btn"]',
     "auth_error_box": '[data-testid="auth-error-box"]',
     
-    # Authenticated Navigation & Dashboard
+    # Authenticated Navigation Bar
     "nav_user_pill": ".nav-user-pill",
     "nav_dashboard": '[data-testid="nav-dashboard"]',
     "nav_documents": '[data-testid="nav-documents"]',
     "nav_passes": '[data-testid="nav-passes"]',
+    "nav_audit": '[data-testid="nav-audit"]',
     "nav_logout_btn": '[data-testid="nav-logout"]',
+    
+    # Authenticated Vault Dashboard (/dashboard/)
+    "dashboard_header": '[data-testid="dashboard-header"]',
+    "dash_upload_btn": '[data-testid="dash-upload-btn"]',
+    "dash_new_pass_btn": '[data-testid="dash-new-pass-btn"]',
+    "vault_status_bar": '[data-testid="vault-status-bar"]',
+    "stats_grid": '[data-testid="stats-grid"]',
+    "stat_cards": ".stat-card",
+    
+    # Encrypted Document Vault (/documents/)
+    "vault_upload_btn": '[data-testid="vault-upload-btn"]',
+    "vault_search_input": '[data-testid="vault-search-input"]',
+    "vault_cat_pills": ".cat-pill",
+    "vault_doc_cards": ".vault-doc-card",
+    
+    # Document Upload Record (/documents/upload/)
+    "upload_card": '[data-testid="upload-card"]',
+    "upload_dropzone": "#file-dropzone",
+    "upload_title": "#id_title",
+    "upload_category": "#id_category",
+    
+    # Ephemeral Share Passes (/share/ & /share/create/)
+    "share_create_form": '[data-testid="share-create-form"]',
+    "back_to_passes_btn": '[data-testid="back-to-passes"]',
+    
+    # Cryptographic Audit Logs (/audit/)
+    "audit_metric_events": '[data-testid="metric-total-events"]',
+    "audit_metric_unlocks": '[data-testid="metric-verified-unlocks"]',
 }

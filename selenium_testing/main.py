@@ -42,15 +42,15 @@ def main():
     )
     parser.add_argument(
         "--suite",
-        choices=["normal", "demo", "all"],
-        default="normal",
-        help="Which test suite to execute in CLI mode (default: normal)",
+        choices=["normal", "full", "auth", "core", "demo", "all"],
+        default="full",
+        help="Which test suite to execute in CLI mode: full (16), auth (6), core (11), demo (3), all (19) (default: full)",
     )
     parser.add_argument(
         "--test",
         type=str,
         default=None,
-        help="Execute an individual test by ID (e.g. TC01, TC05, DEMO_FAIL_02)",
+        help="Execute an individual test by ID (e.g. TC01, TC10, TC12, TC13, TC14, TC15, TC16, DEMO_FAIL_01)",
     )
     parser.add_argument(
         "--delay",
@@ -68,6 +68,11 @@ def main():
         "--headless",
         action="store_true",
         help="Run browser in headless mode",
+    )
+    parser.add_argument(
+        "--close-browser",
+        action="store_true",
+        help="Close the Chrome browser window upon test completion (default: browser stays open for live presentation)",
     )
     parser.add_argument(
         "--url",
@@ -89,6 +94,9 @@ def main():
 
     if args.headless:
         test_config.HEADLESS = True
+
+    if args.close_browser:
+        test_config.set_keep_browser_open(False)
 
     # If --test is provided, default to CLI mode unless explicitly asked otherwise
     if args.test:

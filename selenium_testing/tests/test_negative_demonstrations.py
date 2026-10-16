@@ -15,7 +15,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 
 from .. import test_config
-from ..driver_factory import create_chrome_driver, capture_screenshot, pause, wait_for_page_ready
+from ..driver_factory import get_shared_driver, capture_screenshot, pause, wait_for_page_ready
 
 
 def run_demo_fail_01(driver=None, record_callback=None):
@@ -25,7 +25,7 @@ def run_demo_fail_01(driver=None, record_callback=None):
     """
     owns_driver = driver is None
     if owns_driver:
-        driver = create_chrome_driver()
+        driver = get_shared_driver()
 
     try:
         if record_callback:
@@ -72,8 +72,11 @@ def run_demo_fail_01(driver=None, record_callback=None):
             "is_demo_failure": True,
         }
     finally:
-        if owns_driver and driver:
-            driver.quit()
+        if not test_config.KEEP_BROWSER_OPEN and owns_driver and driver:
+            try:
+                driver.quit()
+            except Exception:
+                pass
 
 
 def run_demo_fail_02(driver=None, record_callback=None):
@@ -83,7 +86,7 @@ def run_demo_fail_02(driver=None, record_callback=None):
     """
     owns_driver = driver is None
     if owns_driver:
-        driver = create_chrome_driver()
+        driver = get_shared_driver()
 
     try:
         if record_callback:
@@ -130,8 +133,11 @@ def run_demo_fail_02(driver=None, record_callback=None):
             "is_demo_failure": True,
         }
     finally:
-        if owns_driver and driver:
-            driver.quit()
+        if not test_config.KEEP_BROWSER_OPEN and owns_driver and driver:
+            try:
+                driver.quit()
+            except Exception:
+                pass
 
 
 def run_demo_fail_03(driver=None, record_callback=None):
@@ -141,7 +147,7 @@ def run_demo_fail_03(driver=None, record_callback=None):
     """
     owns_driver = driver is None
     if owns_driver:
-        driver = create_chrome_driver()
+        driver = get_shared_driver()
 
     try:
         if record_callback:
@@ -193,5 +199,8 @@ def run_demo_fail_03(driver=None, record_callback=None):
             "is_demo_failure": True,
         }
     finally:
-        if owns_driver and driver:
-            driver.quit()
+        if not test_config.KEEP_BROWSER_OPEN and owns_driver and driver:
+            try:
+                driver.quit()
+            except Exception:
+                pass

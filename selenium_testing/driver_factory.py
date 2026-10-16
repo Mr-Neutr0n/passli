@@ -292,3 +292,88 @@ def pause(custom_delay=None):
     delay = custom_delay if custom_delay is not None else test_config.STEP_DELAY
     if delay and delay > 0:
         time.sleep(delay)
+
+
+_SHARED_DRIVER = None
+
+
+def get_shared_driver(headless: bool = None) -> webdriver.Chrome:
+    """
+    Returns the persistent active Chrome WebDriver session.
+    Keeps the browser window open across test executions without closing.
+    """
+    global _SHARED_DRIVER
+    if _SHARED_DRIVER is not None:
+        try:
+            _ = _SHARED_DRIVER.window_handles
+            return _SHARED_DRIVER
+        except Exception:
+            _SHARED_DRIVER = None
+
+    _SHARED_DRIVER = create_chrome_driver(headless=headless)
+    return _SHARED_DRIVER
+
+
+def close_shared_driver():
+    """Explicitly terminate the persistent shared browser session."""
+    global _SHARED_DRIVER
+    if _SHARED_DRIVER is not None:
+        try:
+            _SHARED_DRIVER.quit()
+        except Exception:
+            pass
+        finally:
+            _SHARED_DRIVER = None
+
+
+def is_driver_alive(driver) -> bool:
+    """Check if the webdriver instance is currently running and responsive."""
+    if not driver:
+        return False
+    try:
+        _ = driver.window_handles
+        return True
+    except Exception:
+        return False
+
+
+def ensure_authenticated_session(driver: webdriver.Chrome, step_reporter=None) -> bool:
+    """
+    Check if the current browser window is already logged in as qa_test_user.
+    If not, perform an immediate clean authentication so authenticated tests
+    can run individually without requiring manual login first.
+    """
+    driver.get(f"{test_config.BASE_URL}/dashboard/")
+    wait_for_page_ready(driver, min_stabilize=1.0)
+
+    if "/dashboard" in driver.current_url and len(driver.find_elements(By.CSS_SELECTOR, test_config.SELECTORS["dashboard_header"])) > 0:
+        return True
+
+    # Otherwise authenticate cleanly
+    if step_reporter:
+        step_reporter(f"Authenticating session for '{test_config.TEST_USERNAME}'...")
+
+    driver.get(f"{test_config.BASE_URL}/login/")
+    wait_for_page_ready(driver, min_stabilize=1.0)
+
+    wait = WebDriverWait(driver, test_config.DEFAULT_WAIT_TIMEOUT)
+    username_input = wait.until(
+        EC.visibility_of_element_located((By.CSS_SELECTOR, test_config.SELECTORS["login_username"]))
+    )
+    password_input = wait.until(
+        EC.visibility_of_element_located((By.CSS_SELECTOR, test_config.SELECTORS["login_password"]))
+    )
+    submit_btn = wait.until(
+        EC.element_to_be_clickable((By.CSS_SELECTOR, test_config.SELECTORS["login_submit"]))
+    )
+
+    username_input.clear()
+    username_input.send_keys(test_config.TEST_USERNAME)
+    password_input.clear()
+    password_input.send_keys(test_config.TEST_PASSWORD)
+    pause(0.5)
+
+    submit_btn.click()
+    wait.until(EC.url_contains("/dashboard"))
+    wait_for_page_ready(driver, min_stabilize=1.0)
+    return True

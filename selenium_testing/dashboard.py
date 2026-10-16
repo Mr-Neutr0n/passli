@@ -20,7 +20,15 @@ from tkinter import ttk, messagebox
 from pathlib import Path
 
 from . import test_config
-from .test_runner import TestSuiteRunner, NORMAL_TESTS, DEMO_TESTS
+from .test_runner import (
+    TestSuiteRunner,
+    NORMAL_TESTS,
+    FULL_WEBSITE_TESTS,
+    CORE_ASSIGNMENT_TESTS,
+    AUTHENTICATED_TESTS,
+    DEMO_TESTS,
+)
+from .driver_factory import close_shared_driver
 
 
 class PassliLiveDashboard:
@@ -29,8 +37,8 @@ class PassliLiveDashboard:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.title("Passli — Selenium Test Automation Dashboard")
-        self.root.geometry("880x730")
-        self.root.minsize(740, 580)
+        self.root.geometry("950x740")
+        self.root.minsize(780, 580)
 
         # Stay on top by default so recording captures both browser & dashboard
         self.always_on_top = True
@@ -43,12 +51,12 @@ class PassliLiveDashboard:
 
         # State tracking
         self.test_items = {}  # test_id -> tree item id
-        self.current_suite = "normal"
+        self.current_suite = "full"
         self.is_running = False
         self.selected_test_id = None
 
-        # Master Catalog
-        self.all_tests = NORMAL_TESTS + DEMO_TESTS
+        # Master Catalog — All 16 Website Tests + 3 Demo Tests
+        self.all_tests = FULL_WEBSITE_TESTS + DEMO_TESTS
 
         # Theme Colors (Passli Dark Aesthetic)
         self.c_bg_main = "#0b1120"
@@ -144,9 +152,41 @@ class PassliLiveDashboard:
         )
         self.target_url_label.pack(anchor="w")
 
-        # Top Right Status & Pin
+        # Top Right Status & Browser Window Persistence
         status_box = tk.Frame(header_frame, bg=self.c_bg_main)
         status_box.pack(side=tk.RIGHT)
+
+        self.keep_window_var = tk.BooleanVar(value=test_config.KEEP_BROWSER_OPEN)
+        self.keep_window_check = tk.Checkbutton(
+            status_box,
+            text="🪟 Keep Browser Open",
+            variable=self.keep_window_var,
+            font=("Segoe UI", 8, "bold"),
+            fg="#38bdf8",
+            bg=self.c_bg_main,
+            selectcolor=self.c_bg_header,
+            activebackground=self.c_bg_main,
+            activeforeground="#7dd3fc",
+            command=self._on_keep_window_toggled,
+        )
+        self.keep_window_check.pack(side=tk.LEFT, padx=(0, 8))
+
+        self.btn_close_browser = tk.Button(
+            status_box,
+            text="❌ Close Browser",
+            font=("Segoe UI", 8, "bold"),
+            bg="#450a0a",
+            fg="#f87171",
+            activebackground="#7f1d1d",
+            activeforeground="#ffffff",
+            bd=1,
+            relief="solid",
+            padx=6,
+            pady=2,
+            cursor="hand2",
+            command=self._close_browser_window,
+        )
+        self.btn_close_browser.pack(side=tk.LEFT, padx=(0, 8))
 
         self.pin_btn = tk.Button(
             status_box,
@@ -162,7 +202,7 @@ class PassliLiveDashboard:
             pady=2,
             command=self._toggle_pin,
         )
-        self.pin_btn.pack(side=tk.RIGHT, padx=(8, 0))
+        self.pin_btn.pack(side=tk.LEFT, padx=(0, 8))
 
         self.status_badge = tk.Label(
             status_box,
@@ -174,7 +214,7 @@ class PassliLiveDashboard:
             pady=3,
             relief="flat",
         )
-        self.status_badge.pack(side=tk.RIGHT)
+        self.status_badge.pack(side=tk.LEFT)
 
         # ----------------- Metric Stat Cards -----------------
         metrics_frame = tk.Frame(main_container, bg=self.c_bg_main)
@@ -415,87 +455,103 @@ class PassliLiveDashboard:
         btn_frame = tk.Frame(main_container, bg=self.c_bg_main)
         btn_frame.pack(fill=tk.X)
 
-        self.btn_normal = tk.Button(
+        self.btn_full = tk.Button(
             btn_frame,
-            text="▶ Run Normal Suite (11)",
-            font=("Segoe UI", 9, "bold"),
+            text="▶ Full Website Suite (16)",
+            font=("Segoe UI", 8, "bold"),
+            bg="#059669",
+            fg="#ffffff",
+            activebackground="#047857",
+            activeforeground="#ffffff",
+            bd=0,
+            padx=10,
+            pady=6,
+            cursor="hand2",
+            command=lambda: self._start_suite("full"),
+        )
+        self.btn_full.pack(side=tk.LEFT, padx=(0, 5))
+
+        self.btn_auth = tk.Button(
+            btn_frame,
+            text="▶ After-Login Suite (6)",
+            font=("Segoe UI", 8, "bold"),
+            bg="#0d9488",
+            fg="#ffffff",
+            activebackground="#0f766e",
+            activeforeground="#ffffff",
+            bd=0,
+            padx=10,
+            pady=6,
+            cursor="hand2",
+            command=lambda: self._start_suite("auth"),
+        )
+        self.btn_auth.pack(side=tk.LEFT, padx=(0, 5))
+
+        self.btn_core = tk.Button(
+            btn_frame,
+            text="▶ Core Suite (11)",
+            font=("Segoe UI", 8, "bold"),
             bg="#0284c7",
             fg="#ffffff",
             activebackground="#0369a1",
             activeforeground="#ffffff",
             bd=0,
-            padx=12,
+            padx=10,
             pady=6,
             cursor="hand2",
-            command=lambda: self._start_suite("normal"),
+            command=lambda: self._start_suite("core"),
         )
-        self.btn_normal.pack(side=tk.LEFT, padx=(0, 6))
+        self.btn_core.pack(side=tk.LEFT, padx=(0, 5))
 
         self.btn_demo = tk.Button(
             btn_frame,
-            text="⚠ Run Intentional Failures (3)",
-            font=("Segoe UI", 9, "bold"),
+            text="⚠ Demo Failures (3)",
+            font=("Segoe UI", 8, "bold"),
             bg="#b45309",
             fg="#ffffff",
             activebackground="#92400e",
             activeforeground="#ffffff",
             bd=0,
-            padx=12,
+            padx=10,
             pady=6,
             cursor="hand2",
             command=lambda: self._start_suite("demo"),
         )
-        self.btn_demo.pack(side=tk.LEFT, padx=(0, 6))
-
-        self.btn_all = tk.Button(
-            btn_frame,
-            text="⚡ Run All (14)",
-            font=("Segoe UI", 9, "bold"),
-            bg="#475569",
-            fg="#ffffff",
-            activebackground="#334155",
-            activeforeground="#ffffff",
-            bd=0,
-            padx=12,
-            pady=6,
-            cursor="hand2",
-            command=lambda: self._start_suite("all"),
-        )
-        self.btn_all.pack(side=tk.LEFT, padx=(0, 6))
+        self.btn_demo.pack(side=tk.LEFT, padx=(0, 5))
 
         self.btn_stop = tk.Button(
             btn_frame,
             text="⏹ Stop",
-            font=("Segoe UI", 9, "bold"),
+            font=("Segoe UI", 8, "bold"),
             bg="#be123c",
             fg="#ffffff",
             activebackground="#9f1239",
             activeforeground="#ffffff",
             bd=0,
-            padx=10,
+            padx=8,
             pady=6,
             state=tk.DISABLED,
             cursor="hand2",
             command=self._stop_suite,
         )
-        self.btn_stop.pack(side=tk.LEFT, padx=(0, 6))
+        self.btn_stop.pack(side=tk.LEFT, padx=(0, 5))
 
         self.btn_clear = tk.Button(
             btn_frame,
             text="🗑 Clear",
-            font=("Segoe UI", 9),
+            font=("Segoe UI", 8),
             bg="#1e293b",
             fg="#cbd5e1",
             activebackground="#334155",
             activeforeground="#ffffff",
             bd=1,
             relief="solid",
-            padx=10,
+            padx=8,
             pady=5,
             cursor="hand2",
             command=self._clear_results,
         )
-        self.btn_clear.pack(side=tk.LEFT, padx=(0, 6))
+        self.btn_clear.pack(side=tk.LEFT, padx=(0, 5))
 
         # Right side utility buttons
         self.btn_report = tk.Button(
@@ -593,19 +649,44 @@ class PassliLiveDashboard:
             fg="#38bdf8" if self.always_on_top else "#94a3b8",
         )
 
+    def _on_keep_window_toggled(self):
+        """Toggle persistent Chrome window mode for live university presentation."""
+        val = self.keep_window_var.get()
+        test_config.set_keep_browser_open(val)
+        if val:
+            self.active_step_label.config(
+                text="⚡ Window Mode: 🪟 KEEP BROWSER OPEN active (Window stays open across tests for explanation)"
+            )
+        else:
+            self.active_step_label.config(
+                text="⚡ Window Mode: Auto-Close (Browser will close when test execution finishes)"
+            )
+
+    def _close_browser_window(self):
+        """Explicitly close the shared Chrome browser window whenever the user is done presenting."""
+        try:
+            close_shared_driver()
+            self.active_step_label.config(text="⚡ Shared Chrome browser session closed.")
+        except Exception as e:
+            self.active_step_label.config(text=f"⚡ Notice closing browser: {e}")
+
     def _populate_initial_tree(self, suite_type: str, single_test_id: str = None):
         """Populate Treeview rows with initial WAITING states."""
         self.tree.delete(*self.tree.get_children())
         self.test_items.clear()
 
         if suite_type == "single" and single_test_id:
-            tests = [t for t in self.all_tests if t["id"] == single_test_id]
-        elif suite_type == "normal":
-            tests = NORMAL_TESTS
+            tests = [t for t in self.all_tests if t["id"].upper() == single_test_id.upper()]
+        elif suite_type in ("normal", "full"):
+            tests = FULL_WEBSITE_TESTS
+        elif suite_type == "core":
+            tests = CORE_ASSIGNMENT_TESTS
+        elif suite_type in ("auth", "authenticated"):
+            tests = AUTHENTICATED_TESTS
         elif suite_type == "demo":
             tests = DEMO_TESTS
         else:
-            tests = NORMAL_TESTS + DEMO_TESTS
+            tests = FULL_WEBSITE_TESTS + DEMO_TESTS
 
         for t in tests:
             t_id = t["id"]
@@ -623,7 +704,7 @@ class PassliLiveDashboard:
         self.skipped_card.config(text="0")
         self.duration_card.config(text="0.0s")
         self.prog_var.set(0.0)
-        self.active_step_label.config(text="⚡ Status: Ready to run tests")
+        self.active_step_label.config(text="⚡ Status: Ready to run tests (Browser window stays open for presentation)")
 
     def _on_tree_select(self, event=None):
         """Handle user clicking a table row to enable single test run."""
@@ -668,9 +749,10 @@ class PassliLiveDashboard:
         self._populate_initial_tree(suite_type, single_test_id=single_test_id)
 
         # Update button states
-        self.btn_normal.config(state=tk.DISABLED)
+        self.btn_full.config(state=tk.DISABLED)
+        self.btn_auth.config(state=tk.DISABLED)
+        self.btn_core.config(state=tk.DISABLED)
         self.btn_demo.config(state=tk.DISABLED)
-        self.btn_all.config(state=tk.DISABLED)
         self.btn_clear.config(state=tk.DISABLED)
         self.btn_run_selected.config(state=tk.DISABLED)
         self.btn_run_individual_dropdown.config(state=tk.DISABLED)
@@ -813,9 +895,10 @@ class PassliLiveDashboard:
 
                 elif ev_type == "SUITE_COMPLETED":
                     self.is_running = False
-                    self.btn_normal.config(state=tk.NORMAL)
+                    self.btn_full.config(state=tk.NORMAL)
+                    self.btn_auth.config(state=tk.NORMAL)
+                    self.btn_core.config(state=tk.NORMAL)
                     self.btn_demo.config(state=tk.NORMAL)
-                    self.btn_all.config(state=tk.NORMAL)
                     self.btn_clear.config(state=tk.NORMAL)
                     self.btn_run_individual_dropdown.config(state=tk.NORMAL)
                     if self.selected_test_id:
@@ -834,13 +917,14 @@ class PassliLiveDashboard:
                     else:
                         self.status_badge.config(text=f"COMPLETED ({failed} FAIL)", bg="#991b1b", fg="#fecaca")
                     
-                    self.active_step_label.config(text=f"🏁 Suite execution finished in {dur}s")
+                    self.active_step_label.config(text=f"🏁 Suite execution finished in {dur}s (Chrome window open)")
 
                 elif ev_type == "SUITE_ERROR":
                     self.is_running = False
-                    self.btn_normal.config(state=tk.NORMAL)
+                    self.btn_full.config(state=tk.NORMAL)
+                    self.btn_auth.config(state=tk.NORMAL)
+                    self.btn_core.config(state=tk.NORMAL)
                     self.btn_demo.config(state=tk.NORMAL)
-                    self.btn_all.config(state=tk.NORMAL)
                     self.btn_clear.config(state=tk.NORMAL)
                     self.btn_run_individual_dropdown.config(state=tk.NORMAL)
                     self.btn_stop.config(state=tk.DISABLED)

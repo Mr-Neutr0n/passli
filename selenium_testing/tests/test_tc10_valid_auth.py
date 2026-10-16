@@ -15,7 +15,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 from .. import test_config
-from ..driver_factory import create_chrome_driver, capture_screenshot, pause, wait_for_page_ready
+from ..driver_factory import get_shared_driver, capture_screenshot, pause, wait_for_page_ready
 
 
 def run_test(driver=None, record_callback=None):
@@ -24,7 +24,7 @@ def run_test(driver=None, record_callback=None):
     """
     owns_driver = driver is None
     if owns_driver:
-        driver = create_chrome_driver()
+        driver = get_shared_driver()
 
     wait = WebDriverWait(driver, test_config.DEFAULT_WAIT_TIMEOUT)
 
@@ -105,5 +105,8 @@ def run_test(driver=None, record_callback=None):
             "screenshot": screenshot_path,
         }
     finally:
-        if owns_driver and driver:
-            driver.quit()
+        if not test_config.KEEP_BROWSER_OPEN and owns_driver and driver:
+            try:
+                driver.quit()
+            except Exception:
+                pass
