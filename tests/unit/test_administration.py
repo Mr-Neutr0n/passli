@@ -210,3 +210,27 @@ class AdministrationConsoleTests(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "192.168.1.50")
+
+    def test_ensure_superadmin_command(self):
+        """Verify ensure_superadmin creates both primary and secondary superadmins with valid credentials."""
+        from django.core.management import call_command
+        from django.contrib.auth import authenticate
+        from io import StringIO
+
+        out = StringIO()
+        call_command('ensure_superadmin', stdout=out)
+
+        # Verify superadmin user exists and is fully privileged
+        superadmin = User.objects.get(username='superadmin')
+        self.assertTrue(superadmin.is_superuser)
+        self.assertTrue(superadmin.is_staff)
+        self.assertTrue(superadmin.is_active)
+        self.assertIsNotNone(authenticate(username='superadmin', password='PassliSuperAdmin2026!'))
+
+        # Verify admin user exists and is fully privileged
+        admin = User.objects.get(username='admin')
+        self.assertTrue(admin.is_superuser)
+        self.assertTrue(admin.is_staff)
+        self.assertTrue(admin.is_active)
+        self.assertIsNotNone(authenticate(username='admin', password='PassliAdminDefault2026!'))
+
